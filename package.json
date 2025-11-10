@@ -1,0 +1,30 @@
+{
+  "name": "1rm-calculator",
+  "version": "0.1.0",
+  "description": "Minimal CLI tool to calculate estimated 1RM using the Epley formula",
+  "main": "dist/index.js",
+  "bin": {
+    "1rm": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "dev": "vitest",
+    "lint": "eslint ."
+  },
+  "keywords": [
+    "1rm",
+    "one-rep-max",
+    "calculator",
+    "fitness"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
+  }
+}
+
