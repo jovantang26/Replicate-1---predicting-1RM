@@ -1,10 +1,10 @@
-# 1RM Calculator - Chunk 1
+# 1RM Calculator - Chunk 2
 
-A minimal TypeScript CLI tool to calculate estimated one-rep maximum (1RM) using the Epley formula.
+A TypeScript CLI tool to calculate estimated one-rep maximum (1RM) using the Epley formula, with data logging and history tracking.
 
 ## Overview
 
-This is **Chunk 1** of the 1RM calculator project — a simple CLI application that takes weight and reps as input and outputs an estimated 1RM value. Future chunks will add data collection, weekly grouping, and modeling capabilities.
+This is **Chunk 2** of the 1RM calculator project — a CLI application that calculates 1RM estimates and can save sessions to a local history file. Sessions are stored in `data/sessions.json` and can be listed with the `--list` command.
 
 ## Formula
 
@@ -19,17 +19,39 @@ est1RM = weight * (1 + reps/30)
 
 ## Usage
 
-### Basic Usage
+### Basic Calculation
 
 ```bash
-npx 1rm 225 5
+node dist/index.js 225 5
 # Output: Estimated 1RM: 263 lb
+```
+
+### Save Session to History
+
+```bash
+node dist/index.js 225 5 --save
+# Output: Estimated 1RM: 263 lb
+# (Session is saved to data/sessions.json)
+```
+
+### List Recent Sessions
+
+```bash
+# List last 5 sessions (default)
+node dist/index.js --list
+
+# List last 3 sessions
+node dist/index.js --list 3
+
+# List as JSON
+node dist/index.js --list 3 --json
 ```
 
 ### JSON Output
 
 ```bash
-npx 1rm 265 1 --json
+# Single calculation with JSON
+node dist/index.js 265 1 --json
 # Output:
 # {
 #   "weight": 265,
@@ -37,21 +59,37 @@ npx 1rm 265 1 --json
 #   "estimated1RM": 265,
 #   "method": "epley"
 # }
+
+# History as JSON array
+node dist/index.js --list 2 --json
+# Output:
+# [
+#   {
+#     "date": "2025-11-10T00:00:00.000Z",
+#     "weight": 250,
+#     "reps": 5,
+#     "estimated1RM": 292,
+#     "method": "epley"
+#   },
+#   ...
+# ]
 ```
 
 ### Examples
 
 ```bash
-# Example 1: 225 lb x 5 reps
-npx 1rm 225 5
+# Example 1: Calculate and save
+node dist/index.js 225 5 --save
 # Estimated 1RM: 263 lb
 
-# Example 2: True 1RM (1 rep)
-npx 1rm 265 1
-# Estimated 1RM: 265 lb
+# Example 2: List recent sessions
+node dist/index.js --list
+# Date                  Weight    Reps    1RM
+# --------------------------------------------------
+# Nov 10, 2025, 12:00 PM     225       5     263
 
-# Example 3: JSON output
-npx 1rm 200 3 --json
+# Example 3: JSON output for calculation
+node dist/index.js 200 3 --json
 # {
 #   "weight": 200,
 #   "reps": 3,
@@ -59,6 +97,22 @@ npx 1rm 200 3 --json
 #   "method": "epley"
 # }
 ```
+
+## Data Persistence
+
+Sessions are stored in `data/sessions.json`. The file is automatically created on the first save. Each session includes:
+
+- `date`: ISO 8601 timestamp
+- `weight`: Weight lifted (lbs)
+- `reps`: Number of reps performed
+- `estimated1RM`: Calculated 1RM estimate
+- `method`: Calculation method (always "epley")
+
+### File Handling
+
+- **Missing file**: Automatically created as an empty array `[]` on first save
+- **Corrupt file**: Automatically reinitialized to `[]` and continues without error
+- **Invalid data**: Non-array JSON is detected and the file is reset
 
 ## Validation
 
@@ -100,8 +154,17 @@ npm run dev
 After building:
 
 ```bash
+# Basic calculation
 node dist/index.js 225 5
-node dist/index.js 225 5 --json
+
+# Save a session
+node dist/index.js 225 5 --save
+
+# List recent sessions
+node dist/index.js --list
+
+# List with limit and JSON
+node dist/index.js --list 3 --json
 ```
 
 ## Project Structure
@@ -109,10 +172,14 @@ node dist/index.js 225 5 --json
 ```
 1rm-calculator/
   ├─ src/
-  │   ├─ index.ts            # CLI entrypoint
-  │   └─ calc.ts             # Pure 1RM calculation function
+  │   ├─ index.ts            # CLI entrypoint with --save, --list, --json
+  │   ├─ calc.ts             # Pure 1RM calculation function
+  │   └─ storage.ts           # Session persistence and history
   ├─ test/
-  │   └─ calc.test.ts        # Unit tests
+  │   ├─ calc.test.ts        # Unit tests for calculation
+  │   └─ storage.test.ts     # Tests for persistence and CLI listing
+  ├─ data/
+  │   └─ sessions.json       # Session history (auto-created)
   ├─ package.json
   ├─ tsconfig.json
   ├─ .gitignore
