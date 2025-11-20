@@ -10,6 +10,9 @@ export interface Session {
   reps: number;
   estimated1RM: number;
   method: string; // "epley"
+  bodyweight?: number | null;
+  relativeStrength?: number | null;
+  strengthCategory?: string | undefined; // e.g., novice/intermediate/advanced/elite
 }
 
 const DATA_DIR = path.resolve(__dirname, '..', 'data');
