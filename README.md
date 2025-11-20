@@ -8,7 +8,7 @@ This project is built in chunks, each adding new functionality. **Chunk 1** prov
 
 ---
 
-## Chunk 1: Minimal 1RM Calculator
+## Chunk 1 README: Minimal 1RM Calculator
 
 **Status:** ✅ Complete (v0.1.0)
 
