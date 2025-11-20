@@ -1,4 +1,4 @@
-# 1RM Calculator - Chunk 1
+# 1RM Calculator - Chunk 1: Epley Formula
 
 A minimal TypeScript CLI tool to calculate estimated one-rep maximum (1RM) using the Epley formula.
 
