@@ -1,10 +1,49 @@
-# 1RM Calculator - Chunk 2: Raw Data Collection
+# 1RM Calculator
 
 A TypeScript CLI tool to calculate estimated one-rep maximum (1RM) using the Epley formula, with structured raw data collection for building a training dataset.
 
 ## Overview
 
-This is **Chunk 2** of the 1RM calculator project — a CLI application that calculates 1RM estimates and captures **all essential training variables** needed to build a structured dataset. Sessions are stored in `data/sessions.json` with complete workout information including exercise name, equipment type, sets, and date.
+This project is built in chunks, each adding new functionality:
+
+### Chunk 1: Minimal 1RM Calculator
+
+**Status:** ✅ Complete (v0.1.0)
+
+The foundation of the project - a simple CLI that calculates estimated 1RM using the Epley formula.
+
+**Features:**
+- Basic 1RM calculation: `weight * (1 + reps/30)`
+- Input validation (weight must be positive, reps must be integer 1-30)
+- JSON output support with `--json` flag
+- Error handling with clear messages
+- All 14 unit tests passing
+
+**Example:**
+```bash
+node dist/index.js 225 5
+# Output: Estimated 1RM: 263 lb
+```
+
+### Chunk 2: Raw Data Collection
+
+**Status:** ✅ Complete (v0.2.0)
+
+Extends Chunk 1 by adding structured data collection capabilities. Captures **all essential training variables** needed to build a dataset for future model training.
+
+**Features:**
+- 6 raw input fields: reps, weight, sets, exerciseName, exerciseType, date
+- Session persistence to `data/sessions.json`
+- List saved sessions with `--list` command
+- Full validation of required fields when saving
+- Enhanced table output showing all session data
+- All 31 tests passing (14 calc + 17 storage)
+
+**Example:**
+```bash
+node dist/index.js 225 5 --sets 3 --exercise bench_press --equipment barbell --save
+# Output: Estimated 1RM: 263 lb (saved to data/sessions.json)
+```
 
 ## Formula
 
@@ -17,7 +56,7 @@ est1RM = weight * (1 + reps/30)
 - If `reps === 1`, the weight is returned as the true 1RM (no calculation needed).
 - Otherwise, the formula is applied and the result is rounded to the nearest pound using `Math.round()`.
 
-## Raw Data Fields
+## Raw Data Fields (Chunk 2)
 
 Each session captures **6 raw inputs** plus calculated fields:
 
@@ -30,14 +69,14 @@ Each session captures **6 raw inputs** plus calculated fields:
 
 ## Usage
 
-### Basic Calculation (No Save)
+### Chunk 1: Basic Calculation (No Save)
 
 ```bash
 node dist/index.js 225 5
 # Output: Estimated 1RM: 263 lb
 ```
 
-### Save Structured Session
+### Chunk 2: Save Structured Session
 
 When using `--save`, you must provide all required fields:
 
@@ -137,7 +176,7 @@ node dist/index.js 200 3 --json
 # }
 ```
 
-## Session Schema
+## Session Schema (Chunk 2)
 
 Each saved session follows this structure:
 
@@ -177,10 +216,12 @@ Sessions are stored in `data/sessions.json`. The file is automatically created o
 
 ## Validation
 
-The calculator validates inputs:
-
+### Chunk 1 Validation
 - **Weight**: Must be a positive number
 - **Reps**: Must be an integer between 1 and 30 (inclusive)
+
+### Chunk 2 Additional Validation
+
 - **Sets**: Must be an integer ≥ 1 (required when using `--save`)
 - **exerciseName**: Required when using `--save`
 - **exerciseType**: Required when using `--save`
@@ -190,13 +231,16 @@ Invalid inputs will produce an error message and exit with code 1.
 
 ## CLI Flags
 
+### Chunk 1 Flags
+- `--json` - Output in JSON format
+
+### Chunk 2 Flags
 - `--sets <n>` - Number of sets (required with `--save`)
 - `--exercise <string>` - Exercise name (required with `--save`)
 - `--equipment <string>` - Equipment type (required with `--save`)
 - `--date <YYYY-MM-DD>` - Custom date (optional, defaults to current date/time)
 - `--save` - Save session to `data/sessions.json`
 - `--list [n]` - List past n sessions (default: 5)
-- `--json` - Output in JSON format
 
 ## Date Handling
 
@@ -253,19 +297,33 @@ node dist/index.js --list 3 --json
 ```
 1rm-calculator/
   ├─ src/
-  │   ├─ index.ts            # CLI entrypoint with all flags
-  │   ├─ calc.ts             # Pure 1RM calculation function
-  │   └─ storage.ts           # Session persistence and history
+  │   ├─ index.ts            # CLI entrypoint (Chunk 1 + Chunk 2)
+  │   ├─ calc.ts             # Pure 1RM calculation function (Chunk 1)
+  │   └─ storage.ts           # Session persistence and history (Chunk 2)
   ├─ test/
-  │   ├─ calc.test.ts        # Unit tests for calculation
-  │   └─ storage.test.ts     # Tests for structured sessions and CLI
+  │   ├─ calc.test.ts        # Unit tests for calculation (Chunk 1)
+  │   └─ storage.test.ts     # Tests for structured sessions and CLI (Chunk 2)
   ├─ data/
-  │   └─ sessions.json       # Session history (auto-created)
+  │   └─ sessions.json       # Session history (auto-created, Chunk 2)
   ├─ package.json
   ├─ tsconfig.json
   ├─ .gitignore
   └─ README.md
 ```
+
+## Chunk History
+
+- **v0.1.0** - Chunk 1: Minimal 1RM Calculator
+  - Basic calculation with Epley formula
+  - Input validation
+  - JSON output support
+  - 14 unit tests
+
+- **v0.2.0** - Chunk 2: Raw Data Collection
+  - Structured session storage
+  - 6 raw input fields
+  - Session listing and history
+  - 17 additional tests (31 total)
 
 ## Rounding
 
