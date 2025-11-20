@@ -3,6 +3,9 @@ import * as path from 'path';
 
 export interface Session {
   date: string;
+  exerciseName: string;
+  exerciseType: string;
+  sets: number;
   weight: number;
   reps: number;
   estimated1RM: number;
