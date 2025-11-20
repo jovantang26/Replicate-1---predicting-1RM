@@ -1,10 +1,10 @@
-# 1RM Calculator - Chunk 1
+# 1RM Calculator - Chunk 2: Raw Data Collection
 
-A minimal TypeScript CLI tool to calculate estimated one-rep maximum (1RM) using the Epley formula.
+A TypeScript CLI tool to calculate estimated one-rep maximum (1RM) using the Epley formula, with structured raw data collection for building a training dataset.
 
 ## Overview
 
-This is **Chunk 1** of the 1RM calculator project — a simple CLI application that takes weight and reps as input and outputs an estimated 1RM value. Future chunks will add data collection, weekly grouping, and modeling capabilities.
+This is **Chunk 2** of the 1RM calculator project — a CLI application that calculates 1RM estimates and captures **all essential training variables** needed to build a structured dataset. Sessions are stored in `data/sessions.json` with complete workout information including exercise name, equipment type, sets, and date.
 
 ## Formula
 
@@ -17,19 +17,60 @@ est1RM = weight * (1 + reps/30)
 - If `reps === 1`, the weight is returned as the true 1RM (no calculation needed).
 - Otherwise, the formula is applied and the result is rounded to the nearest pound using `Math.round()`.
 
+## Raw Data Fields
+
+Each session captures **6 raw inputs** plus calculated fields:
+
+1. **reps** - Number of reps performed (required)
+2. **weight** - Weight lifted in lbs (required)
+3. **sets** - Number of sets performed (required when using `--save`)
+4. **exerciseName** - Exercise identifier, e.g., `"bench_press"`, `"incline_smith"`, `"lat_pulldown"` (required when using `--save`)
+5. **exerciseType** - Equipment type, e.g., `"barbell"`, `"cable"`, `"machine"` (required when using `--save`)
+6. **date** - ISO 8601 timestamp (auto-generated unless `--date` is provided)
+
 ## Usage
 
-### Basic Usage
+### Basic Calculation (No Save)
 
 ```bash
-npx 1rm 225 5
+node dist/index.js 225 5
 # Output: Estimated 1RM: 263 lb
+```
+
+### Save Structured Session
+
+When using `--save`, you must provide all required fields:
+
+```bash
+node dist/index.js 225 5 --sets 3 --exercise bench_press --equipment barbell --save
+# Output: Estimated 1RM: 263 lb
+# (Full session saved to data/sessions.json)
+```
+
+### Save with Custom Date
+
+```bash
+node dist/index.js 185 3 --sets 4 --exercise incline_smith --equipment machine --date 2025-11-10 --save
+```
+
+### List Recent Sessions
+
+```bash
+# List last 5 sessions (default)
+node dist/index.js --list
+
+# List last 3 sessions
+node dist/index.js --list 3
+
+# List as JSON
+node dist/index.js --list 3 --json
 ```
 
 ### JSON Output
 
 ```bash
-npx 1rm 265 1 --json
+# Single calculation with JSON (no save)
+node dist/index.js 265 1 --json
 # Output:
 # {
 #   "weight": 265,
@@ -37,21 +78,57 @@ npx 1rm 265 1 --json
 #   "estimated1RM": 265,
 #   "method": "epley"
 # }
+
+# Save with JSON output (returns full session)
+node dist/index.js 225 5 --sets 3 --exercise bench_press --equipment barbell --save --json
+# Output:
+# {
+#   "date": "2025-11-20T08:30:00.000Z",
+#   "exerciseName": "bench_press",
+#   "exerciseType": "barbell",
+#   "sets": 3,
+#   "weight": 225,
+#   "reps": 5,
+#   "estimated1RM": 263,
+#   "method": "epley"
+# }
+
+# History as JSON array
+node dist/index.js --list 2 --json
+# Output:
+# [
+#   {
+#     "date": "2025-11-10T00:00:00.000Z",
+#     "exerciseName": "bench_press",
+#     "exerciseType": "barbell",
+#     "sets": 3,
+#     "weight": 250,
+#     "reps": 5,
+#     "estimated1RM": 292,
+#     "method": "epley"
+#   },
+#   ...
+# ]
 ```
 
 ### Examples
 
 ```bash
-# Example 1: 225 lb x 5 reps
-npx 1rm 225 5
+# Example 1: Calculate and save structured session
+node dist/index.js 225 5 --sets 3 --exercise bench_press --equipment barbell --save
 # Estimated 1RM: 263 lb
 
-# Example 2: True 1RM (1 rep)
-npx 1rm 265 1
-# Estimated 1RM: 265 lb
+# Example 2: List recent sessions (table format)
+node dist/index.js --list
+# Date                  Exercise            Equipment    Sets    Weight    Reps    1RM
+# ------------------------------------------------------------------------------------------
+# Nov 20, 2025, 12:00 PM     bench_press         barbell        3      225       5     263
 
-# Example 3: JSON output
-npx 1rm 200 3 --json
+# Example 3: Save with custom date
+node dist/index.js 185 3 --sets 4 --exercise incline_smith --equipment machine --date 2025-11-10 --save
+
+# Example 4: JSON output for calculation (no save)
+node dist/index.js 200 3 --json
 # {
 #   "weight": 200,
 #   "reps": 3,
@@ -60,14 +137,72 @@ npx 1rm 200 3 --json
 # }
 ```
 
+## Session Schema
+
+Each saved session follows this structure:
+
+```json
+{
+  "date": "2025-11-10T00:00:00.000Z",
+  "exerciseName": "bench_press",
+  "exerciseType": "barbell",
+  "sets": 3,
+  "weight": 225,
+  "reps": 5,
+  "estimated1RM": 263,
+  "method": "epley"
+}
+```
+
+### Field Descriptions
+
+- **date**: ISO 8601 timestamp (auto-generated from current time or `--date` flag)
+- **exerciseName**: Exercise identifier (snake_case recommended, e.g., `bench_press`, `incline_smith`)
+- **exerciseType**: Equipment type (e.g., `barbell`, `cable`, `machine`, `dumbbell`)
+- **sets**: Number of sets performed (integer ≥ 1)
+- **weight**: Weight lifted in lbs (positive number)
+- **reps**: Number of reps performed (integer 1-30)
+- **estimated1RM**: Calculated 1RM estimate using Epley formula
+- **method**: Calculation method (always `"epley"`)
+
+## Data Persistence
+
+Sessions are stored in `data/sessions.json`. The file is automatically created on the first save. 
+
+### File Handling
+
+- **Missing file**: Automatically created as an empty array `[]` on first save
+- **Corrupt file**: Automatically reinitialized to `[]` and continues without error
+- **Invalid data**: Non-array JSON is detected and the file is reset
+
 ## Validation
 
 The calculator validates inputs:
 
 - **Weight**: Must be a positive number
 - **Reps**: Must be an integer between 1 and 30 (inclusive)
+- **Sets**: Must be an integer ≥ 1 (required when using `--save`)
+- **exerciseName**: Required when using `--save`
+- **exerciseType**: Required when using `--save`
+- **date**: If provided via `--date`, must be valid ISO format or YYYY-MM-DD. If invalid, an error is shown.
 
 Invalid inputs will produce an error message and exit with code 1.
+
+## CLI Flags
+
+- `--sets <n>` - Number of sets (required with `--save`)
+- `--exercise <string>` - Exercise name (required with `--save`)
+- `--equipment <string>` - Equipment type (required with `--save`)
+- `--date <YYYY-MM-DD>` - Custom date (optional, defaults to current date/time)
+- `--save` - Save session to `data/sessions.json`
+- `--list [n]` - List past n sessions (default: 5)
+- `--json` - Output in JSON format
+
+## Date Handling
+
+- **Default behavior**: If `--date` is not provided, the current date/time is used (ISO 8601 format)
+- **Custom date**: Use `--date YYYY-MM-DD` to specify a date (e.g., `--date 2025-11-10`)
+- **Invalid date**: If an invalid date format is provided, the CLI will error and exit
 
 ## Development
 
@@ -100,8 +235,17 @@ npm run dev
 After building:
 
 ```bash
+# Basic calculation
 node dist/index.js 225 5
-node dist/index.js 225 5 --json
+
+# Save a structured session
+node dist/index.js 225 5 --sets 3 --exercise bench_press --equipment barbell --save
+
+# List recent sessions
+node dist/index.js --list
+
+# List with limit and JSON
+node dist/index.js --list 3 --json
 ```
 
 ## Project Structure
@@ -109,10 +253,14 @@ node dist/index.js 225 5 --json
 ```
 1rm-calculator/
   ├─ src/
-  │   ├─ index.ts            # CLI entrypoint
-  │   └─ calc.ts             # Pure 1RM calculation function
+  │   ├─ index.ts            # CLI entrypoint with all flags
+  │   ├─ calc.ts             # Pure 1RM calculation function
+  │   └─ storage.ts           # Session persistence and history
   ├─ test/
-  │   └─ calc.test.ts        # Unit tests
+  │   ├─ calc.test.ts        # Unit tests for calculation
+  │   └─ storage.test.ts     # Tests for structured sessions and CLI
+  ├─ data/
+  │   └─ sessions.json       # Session history (auto-created)
   ├─ package.json
   ├─ tsconfig.json
   ├─ .gitignore
@@ -128,4 +276,3 @@ All results are rounded to the nearest pound using `Math.round()`. For example:
 ## License
 
 MIT
-
