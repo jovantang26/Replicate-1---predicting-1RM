@@ -79,6 +79,9 @@ describe('storage', () => {
       const testSessions: Session[] = [
         {
           date: '2025-11-10T00:00:00.000Z',
+          exerciseName: 'bench_press',
+          exerciseType: 'barbell',
+          sets: 3,
           weight: 225,
           reps: 5,
           estimated1RM: 263,
@@ -98,6 +101,9 @@ describe('storage', () => {
     it('should create file and directory on first save', () => {
       const session: Session = {
         date: '2025-11-10T00:00:00.000Z',
+        exerciseName: 'bench_press',
+        exerciseType: 'barbell',
+        sets: 3,
         weight: 225,
         reps: 5,
         estimated1RM: 263,
@@ -116,6 +122,9 @@ describe('storage', () => {
     it('should append to existing sessions', () => {
       const session1: Session = {
         date: '2025-11-10T00:00:00.000Z',
+        exerciseName: 'bench_press',
+        exerciseType: 'barbell',
+        sets: 3,
         weight: 225,
         reps: 5,
         estimated1RM: 263,
@@ -124,6 +133,9 @@ describe('storage', () => {
 
       const session2: Session = {
         date: '2025-11-11T00:00:00.000Z',
+        exerciseName: 'incline_smith',
+        exerciseType: 'machine',
+        sets: 4,
         weight: 250,
         reps: 3,
         estimated1RM: 275,
@@ -149,6 +161,9 @@ describe('storage', () => {
     it('should return all sessions in reverse chronological order', () => {
       const session1: Session = {
         date: '2025-11-10T00:00:00.000Z',
+        exerciseName: 'bench_press',
+        exerciseType: 'barbell',
+        sets: 3,
         weight: 225,
         reps: 5,
         estimated1RM: 263,
@@ -157,6 +172,9 @@ describe('storage', () => {
 
       const session2: Session = {
         date: '2025-11-11T00:00:00.000Z',
+        exerciseName: 'incline_smith',
+        exerciseType: 'machine',
+        sets: 4,
         weight: 250,
         reps: 3,
         estimated1RM: 275,
@@ -165,6 +183,9 @@ describe('storage', () => {
 
       const session3: Session = {
         date: '2025-11-12T00:00:00.000Z',
+        exerciseName: 'lat_pulldown',
+        exerciseType: 'cable',
+        sets: 3,
         weight: 275,
         reps: 2,
         estimated1RM: 293,
@@ -185,11 +206,11 @@ describe('storage', () => {
 
     it('should respect limit parameter', () => {
       const sessions: Session[] = [
-        { date: '2025-11-10T00:00:00.000Z', weight: 200, reps: 5, estimated1RM: 233, method: 'epley' },
-        { date: '2025-11-11T00:00:00.000Z', weight: 225, reps: 5, estimated1RM: 263, method: 'epley' },
-        { date: '2025-11-12T00:00:00.000Z', weight: 250, reps: 5, estimated1RM: 292, method: 'epley' },
-        { date: '2025-11-13T00:00:00.000Z', weight: 275, reps: 5, estimated1RM: 321, method: 'epley' },
-        { date: '2025-11-14T00:00:00.000Z', weight: 300, reps: 5, estimated1RM: 350, method: 'epley' }
+        { date: '2025-11-10T00:00:00.000Z', exerciseName: 'bench_press', exerciseType: 'barbell', sets: 3, weight: 200, reps: 5, estimated1RM: 233, method: 'epley' },
+        { date: '2025-11-11T00:00:00.000Z', exerciseName: 'bench_press', exerciseType: 'barbell', sets: 3, weight: 225, reps: 5, estimated1RM: 263, method: 'epley' },
+        { date: '2025-11-12T00:00:00.000Z', exerciseName: 'bench_press', exerciseType: 'barbell', sets: 3, weight: 250, reps: 5, estimated1RM: 292, method: 'epley' },
+        { date: '2025-11-13T00:00:00.000Z', exerciseName: 'bench_press', exerciseType: 'barbell', sets: 3, weight: 275, reps: 5, estimated1RM: 321, method: 'epley' },
+        { date: '2025-11-14T00:00:00.000Z', exerciseName: 'bench_press', exerciseType: 'barbell', sets: 3, weight: 300, reps: 5, estimated1RM: 350, method: 'epley' }
       ];
 
       sessions.forEach(s => saveSession(s));
@@ -205,6 +226,9 @@ describe('storage', () => {
     it('should handle limit larger than available sessions', () => {
       const session: Session = {
         date: '2025-11-10T00:00:00.000Z',
+        exerciseName: 'bench_press',
+        exerciseType: 'barbell',
+        sets: 3,
         weight: 225,
         reps: 5,
         estimated1RM: 263,
@@ -232,6 +256,9 @@ describe('storage', () => {
       // Save some test sessions
       saveSession({
         date: '2025-11-10T00:00:00.000Z',
+        exerciseName: 'bench_press',
+        exerciseType: 'barbell',
+        sets: 3,
         weight: 225,
         reps: 5,
         estimated1RM: 263,
@@ -239,6 +266,9 @@ describe('storage', () => {
       });
       saveSession({
         date: '2025-11-11T00:00:00.000Z',
+        exerciseName: 'incline_smith',
+        exerciseType: 'machine',
+        sets: 4,
         weight: 250,
         reps: 3,
         estimated1RM: 275,
@@ -249,6 +279,7 @@ describe('storage', () => {
       
       // Should contain header and data rows
       expect(output).toContain('Date');
+      expect(output).toContain('Exercise');
       expect(output).toContain('Weight');
       expect(output).toContain('Reps');
       expect(output).toContain('1RM');
@@ -260,6 +291,9 @@ describe('storage', () => {
       // Save some test sessions
       saveSession({
         date: '2025-11-10T00:00:00.000Z',
+        exerciseName: 'bench_press',
+        exerciseType: 'barbell',
+        sets: 3,
         weight: 225,
         reps: 5,
         estimated1RM: 263,
@@ -267,6 +301,9 @@ describe('storage', () => {
       });
       saveSession({
         date: '2025-11-11T00:00:00.000Z',
+        exerciseName: 'incline_smith',
+        exerciseType: 'machine',
+        sets: 4,
         weight: 250,
         reps: 3,
         estimated1RM: 275,
@@ -274,6 +311,9 @@ describe('storage', () => {
       });
       saveSession({
         date: '2025-11-12T00:00:00.000Z',
+        exerciseName: 'lat_pulldown',
+        exerciseType: 'cable',
+        sets: 3,
         weight: 275,
         reps: 2,
         estimated1RM: 293,
@@ -289,6 +329,9 @@ describe('storage', () => {
       // Verify structure
       parsed.forEach((session: Session) => {
         expect(session).toHaveProperty('date');
+        expect(session).toHaveProperty('exerciseName');
+        expect(session).toHaveProperty('exerciseType');
+        expect(session).toHaveProperty('sets');
         expect(session).toHaveProperty('weight');
         expect(session).toHaveProperty('reps');
         expect(session).toHaveProperty('estimated1RM');
@@ -302,21 +345,70 @@ describe('storage', () => {
       expect(parsed[2].weight).toBe(225);
     });
 
-    it('should save session when --save flag is used', () => {
+    it('should save session when --save flag is used with all required fields', () => {
       // Clear any existing sessions
       if (fs.existsSync(originalSessionsFile)) {
         fs.unlinkSync(originalSessionsFile);
       }
 
-      execSync(`node "${cliPath}" 225 5 --save`, { encoding: 'utf-8' });
+      execSync(`node "${cliPath}" 225 5 --sets 3 --exercise bench_press --equipment barbell --save`, { encoding: 'utf-8' });
       
       const sessions = loadSessions();
       expect(sessions).toHaveLength(1);
       expect(sessions[0].weight).toBe(225);
       expect(sessions[0].reps).toBe(5);
+      expect(sessions[0].sets).toBe(3);
+      expect(sessions[0].exerciseName).toBe('bench_press');
+      expect(sessions[0].exerciseType).toBe('barbell');
       expect(sessions[0].estimated1RM).toBe(263);
       expect(sessions[0].method).toBe('epley');
       expect(sessions[0].date).toBeDefined();
+    });
+
+    it('should error when --save is used without --sets', () => {
+      try {
+        execSync(`node "${cliPath}" 225 5 --exercise bench_press --equipment barbell --save`, { encoding: 'utf-8', stdio: 'pipe' });
+        expect.fail('Should have thrown an error');
+      } catch (error: any) {
+        expect(error.status).toBe(1);
+        const errorOutput = error.stderr?.toString() || error.stdout?.toString() || '';
+        expect(errorOutput).toContain('--sets is required');
+      }
+    });
+
+    it('should error when --save is used without --exercise', () => {
+      try {
+        execSync(`node "${cliPath}" 225 5 --sets 3 --equipment barbell --save`, { encoding: 'utf-8', stdio: 'pipe' });
+        expect.fail('Should have thrown an error');
+      } catch (error: any) {
+        expect(error.status).toBe(1);
+        const errorOutput = error.stderr?.toString() || error.stdout?.toString() || '';
+        expect(errorOutput).toContain('--exercise is required');
+      }
+    });
+
+    it('should error when --save is used without --equipment', () => {
+      try {
+        execSync(`node "${cliPath}" 225 5 --sets 3 --exercise bench_press --save`, { encoding: 'utf-8', stdio: 'pipe' });
+        expect.fail('Should have thrown an error');
+      } catch (error: any) {
+        expect(error.status).toBe(1);
+        const errorOutput = error.stderr?.toString() || error.stdout?.toString() || '';
+        expect(errorOutput).toContain('--equipment is required');
+      }
+    });
+
+    it('should save session with custom date when --date is provided', () => {
+      // Clear any existing sessions
+      if (fs.existsSync(originalSessionsFile)) {
+        fs.unlinkSync(originalSessionsFile);
+      }
+
+      execSync(`node "${cliPath}" 225 5 --sets 3 --exercise bench_press --equipment barbell --date 2025-11-10 --save`, { encoding: 'utf-8' });
+      
+      const sessions = loadSessions();
+      expect(sessions).toHaveLength(1);
+      expect(sessions[0].date).toContain('2025-11-10');
     });
   });
 });
