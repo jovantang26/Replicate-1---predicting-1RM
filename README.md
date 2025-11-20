@@ -4,7 +4,7 @@ A minimal TypeScript CLI tool to calculate estimated one-rep maximum (1RM) using
 
 ## Overview
 
-This is **Chunk 1** of the 1RM calculator project — a simple CLI application that takes weight and reps as input and outputs an estimated 1RM value. Future chunks will add data collection, weekly grouping, and modeling capabilities.
+This is **Chunk 1** of the 1RM calculator project — a simple CLI application that calculates estimated 1RM using the Epley formula. This is the foundation of the project.
 
 ## Formula
 
@@ -19,22 +19,22 @@ est1RM = weight * (1 + reps/30)
 
 ## Usage
 
-### Basic Usage
+### Basic Calculation
 
 ```bash
-npx 1rm 225 5
+node dist/index.js 225 5
 # Output: Estimated 1RM: 263 lb
 ```
 
 ### JSON Output
 
 ```bash
-npx 1rm 265 1 --json
+node dist/index.js 225 5 --json
 # Output:
 # {
-#   "weight": 265,
-#   "reps": 1,
-#   "estimated1RM": 265,
+#   "weight": 225,
+#   "reps": 5,
+#   "estimated1RM": 263,
 #   "method": "epley"
 # }
 ```
@@ -43,15 +43,15 @@ npx 1rm 265 1 --json
 
 ```bash
 # Example 1: 225 lb x 5 reps
-npx 1rm 225 5
+node dist/index.js 225 5
 # Estimated 1RM: 263 lb
 
 # Example 2: True 1RM (1 rep)
-npx 1rm 265 1
+node dist/index.js 265 1
 # Estimated 1RM: 265 lb
 
 # Example 3: JSON output
-npx 1rm 200 3 --json
+node dist/index.js 200 3 --json
 # {
 #   "weight": 200,
 #   "reps": 3,
@@ -68,6 +68,10 @@ The calculator validates inputs:
 - **Reps**: Must be an integer between 1 and 30 (inclusive)
 
 Invalid inputs will produce an error message and exit with code 1.
+
+## CLI Flags
+
+- `--json` - Output in JSON format
 
 ## Development
 
@@ -100,7 +104,10 @@ npm run dev
 After building:
 
 ```bash
+# Basic calculation
 node dist/index.js 225 5
+
+# JSON output
 node dist/index.js 225 5 --json
 ```
 
@@ -112,7 +119,7 @@ node dist/index.js 225 5 --json
   │   ├─ index.ts            # CLI entrypoint
   │   └─ calc.ts             # Pure 1RM calculation function
   ├─ test/
-  │   └─ calc.test.ts        # Unit tests
+  │   └─ calc.test.ts        # Unit tests for calculation
   ├─ package.json
   ├─ tsconfig.json
   ├─ .gitignore
@@ -128,4 +135,3 @@ All results are rounded to the nearest pound using `Math.round()`. For example:
 ## License
 
 MIT
-
