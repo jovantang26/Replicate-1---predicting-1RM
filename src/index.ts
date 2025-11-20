@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 import { estimate1RM } from './calc';
-import { saveSession, listSessions, Session } from './storage';
+import { saveSession, listSessions, loadSessions, Session } from './storage';
+import { getWeeklySummaries, formatWeeklyTable, WeeklySummary } from './weekly';
 
 interface CliArgs {
   weight?: number;
@@ -13,6 +14,8 @@ interface CliArgs {
   json: boolean;
   save: boolean;
   list?: number; // undefined means --list was not provided, number means limit
+  weekly: boolean; // true means --weekly was provided
+  weeklyLimit?: number; // optional limit for weekly summaries
 }
 
 function parseArgs(): CliArgs {
@@ -21,6 +24,24 @@ function parseArgs(): CliArgs {
   const json = args.includes('--json') || args.includes('-json');
   const save = args.includes('--save') || args.includes('-save');
   const listIndex = args.findIndex(arg => arg === '--list' || arg === '-list');
+  const weeklyIndex = args.findIndex(arg => arg === '--weekly' || arg === '-weekly');
+  
+  // Handle --weekly command
+  if (weeklyIndex !== -1) {
+    let limit: number | undefined = undefined;
+    
+    // Check for --limit flag
+    const limitIndex = args.findIndex(arg => arg === '--limit' || arg === '-limit');
+    if (limitIndex !== -1 && limitIndex + 1 < args.length) {
+      const nextArg = args[limitIndex + 1];
+      const parsed = parseInt(nextArg, 10);
+      if (!isNaN(parsed) && parsed > 0) {
+        limit = parsed;
+      }
+    }
+    
+    return { json, save: false, list: undefined, weekly: true, weeklyLimit: limit };
+  }
   
   // Handle --list command
   if (listIndex !== -1) {
@@ -35,13 +56,14 @@ function parseArgs(): CliArgs {
       }
     }
     
-    return { json, save: false, list: limit };
+    return { json, save: false, list: limit, weekly: false, weeklyLimit: undefined };
   }
   
   // Handle calculation command (requires weight and reps)
   if (args.length < 2) {
     console.error('Usage: 1rm <weight> <reps> [--sets <n>] [--exercise <name>] [--equipment <type>] [--date <YYYY-MM-DD>] [--save] [--json]');
     console.error('   or: 1rm --list [n] [--json]');
+    console.error('   or: 1rm --weekly [--limit <n>] [--json]');
     process.exit(1);
   }
 
@@ -82,7 +104,7 @@ function parseArgs(): CliArgs {
     date = args[dateIndex + 1];
   }
 
-  return { weight, reps, sets, exerciseName, exerciseType, date, json, save, list: undefined };
+  return { weight, reps, sets, exerciseName, exerciseType, date, json, save, list: undefined, weekly: false, weeklyLimit: undefined };
 }
 
 function formatSessionTable(sessions: Session[]): string {
@@ -109,6 +131,24 @@ function formatSessionTable(sessions: Session[]): string {
 function main() {
   try {
     const args = parseArgs();
+
+    // Handle --weekly command
+    if (args.weekly) {
+      const allSessions = loadSessions();
+      let summaries = getWeeklySummaries(allSessions);
+      
+      // Apply limit if specified
+      if (args.weeklyLimit !== undefined && args.weeklyLimit > 0) {
+        summaries = summaries.slice(0, args.weeklyLimit);
+      }
+      
+      if (args.json) {
+        console.log(JSON.stringify(summaries, null, 2));
+      } else {
+        console.log(formatWeeklyTable(summaries));
+      }
+      return;
+    }
 
     // Handle --list command
     if (args.list !== undefined) {
