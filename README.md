@@ -4,7 +4,7 @@ A TypeScript CLI tool to calculate estimated one-rep maximum (1RM) using the Epl
 
 ## Overview
 
-This project is built in chunks, each adding new functionality:
+This project is built in chunks, each adding new functionality. **Chunk 1** provides the core 1RM calculation functionality. **Chunk 2** extends it with structured data collection.
 
 ---
 
