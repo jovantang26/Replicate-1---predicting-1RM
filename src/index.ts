@@ -3,6 +3,7 @@
 import { estimate1RM } from './calc';
 import { saveSession, listSessions, loadSessions, Session } from './storage';
 import { getWeeklySummaries, formatWeeklyTable, WeeklySummary } from './weekly';
+import { computeRelativeStrength, classifyStrengthRatio } from './rel';
 
 interface CliArgs {
   weight?: number;
@@ -11,11 +12,13 @@ interface CliArgs {
   exerciseName?: string;
   exerciseType?: string;
   date?: string;
+  bodyweight?: number | null;
   json: boolean;
   save: boolean;
   list?: number; // undefined means --list was not provided, number means limit
   weekly: boolean; // true means --weekly was provided
   weeklyLimit?: number; // optional limit for weekly summaries
+  rel: boolean; // true means --rel was provided
 }
 
 function parseArgs(): CliArgs {
@@ -25,6 +28,12 @@ function parseArgs(): CliArgs {
   const save = args.includes('--save') || args.includes('-save');
   const listIndex = args.findIndex(arg => arg === '--list' || arg === '-list');
   const weeklyIndex = args.findIndex(arg => arg === '--weekly' || arg === '-weekly');
+  const relIndex = args.findIndex(arg => arg === '--rel' || arg === '-rel');
+  
+  // Handle --rel command
+  if (relIndex !== -1) {
+    return { json, save: false, list: undefined, weekly: false, weeklyLimit: undefined, rel: true };
+  }
   
   // Handle --weekly command
   if (weeklyIndex !== -1) {
@@ -40,7 +49,7 @@ function parseArgs(): CliArgs {
       }
     }
     
-    return { json, save: false, list: undefined, weekly: true, weeklyLimit: limit };
+    return { json, save: false, list: undefined, weekly: true, weeklyLimit: limit, rel: false };
   }
   
   // Handle --list command
@@ -56,14 +65,15 @@ function parseArgs(): CliArgs {
       }
     }
     
-    return { json, save: false, list: limit, weekly: false, weeklyLimit: undefined };
+    return { json, save: false, list: limit, weekly: false, weeklyLimit: undefined, rel: false };
   }
   
   // Handle calculation command (requires weight and reps)
   if (args.length < 2) {
-    console.error('Usage: 1rm <weight> <reps> [--sets <n>] [--exercise <name>] [--equipment <type>] [--date <YYYY-MM-DD>] [--save] [--json]');
+    console.error('Usage: 1rm <weight> <reps> [--sets <n>] [--exercise <name>] [--equipment <type>] [--date <YYYY-MM-DD>] [--bw <weight>] [--save] [--json]');
     console.error('   or: 1rm --list [n] [--json]');
     console.error('   or: 1rm --weekly [--limit <n>] [--json]');
+    console.error('   or: 1rm --rel [--json]');
     process.exit(1);
   }
 
@@ -104,7 +114,18 @@ function parseArgs(): CliArgs {
     date = args[dateIndex + 1];
   }
 
-  return { weight, reps, sets, exerciseName, exerciseType, date, json, save, list: undefined, weekly: false, weeklyLimit: undefined };
+  let bodyweight: number | null | undefined = undefined;
+  const bwIndex = args.findIndex(arg => arg === '--bw' || arg === '-bw');
+  if (bwIndex !== -1 && bwIndex + 1 < args.length) {
+    const bwValue = parseFloat(args[bwIndex + 1]);
+    if (!isNaN(bwValue) && bwValue > 0) {
+      bodyweight = bwValue;
+    } else {
+      bodyweight = null;
+    }
+  }
+
+  return { weight, reps, sets, exerciseName, exerciseType, date, bodyweight, json, save, list: undefined, weekly: false, weeklyLimit: undefined, rel: false };
 }
 
 function formatSessionTable(sessions: Session[]): string {
@@ -128,9 +149,46 @@ function formatSessionTable(sessions: Session[]): string {
   return [header, separator, ...rows].join('\n');
 }
 
+function formatRelativeStrengthTable(sessions: Session[]): string {
+  if (sessions.length === 0) {
+    return 'No sessions found.';
+  }
+
+  const header = 'date        exercise      weight reps est1RM bw   rel  category';
+  const separator = '-'.repeat(70);
+  const rows = sessions.map(s => {
+    const date = new Date(s.date).toISOString().split('T')[0];
+    const exercise = s.exerciseName;
+    const weight = s.weight.toString();
+    const reps = s.reps.toString();
+    const est1RM = s.estimated1RM.toString();
+    const bw = s.bodyweight !== null && s.bodyweight !== undefined ? s.bodyweight.toString() : 'N/A';
+    const rel = s.relativeStrength !== null && s.relativeStrength !== undefined 
+      ? s.relativeStrength.toFixed(2) 
+      : 'N/A';
+    const category = s.strengthCategory || 'N/A';
+    
+    return `${date.padEnd(12)} ${exercise.padEnd(14)} ${weight.padStart(6)} ${reps.padStart(4)} ${est1RM.padStart(6)} ${bw.padStart(4)} ${rel.padStart(5)} ${category}`;
+  });
+
+  return [header, separator, ...rows].join('\n');
+}
+
 function main() {
   try {
     const args = parseArgs();
+
+    // Handle --rel command
+    if (args.rel) {
+      const sessions = listSessions();
+      
+      if (args.json) {
+        console.log(JSON.stringify(sessions, null, 2));
+      } else {
+        console.log(formatRelativeStrengthTable(sessions));
+      }
+      return;
+    }
 
     // Handle --weekly command
     if (args.weekly) {
@@ -168,7 +226,7 @@ function main() {
       process.exit(1);
     }
 
-    const { weight, reps, sets, exerciseName, exerciseType, date } = args;
+    const { weight, reps, sets, exerciseName, exerciseType, date, bodyweight } = args;
     const estimated1RM = estimate1RM(weight, reps);
 
     // Validate required fields if saving
@@ -204,6 +262,10 @@ function main() {
     // Create full session object (only if saving, otherwise minimal for output)
     let session: Session | null = null;
     if (args.save) {
+      // Compute relative strength if bodyweight is provided
+      const relativeStrength = computeRelativeStrength(estimated1RM, bodyweight);
+      const strengthCategory = classifyStrengthRatio(relativeStrength);
+      
       session = {
         date: sessionDate,
         exerciseName: exerciseName!,
@@ -212,7 +274,10 @@ function main() {
         weight,
         reps,
         estimated1RM,
-        method: 'epley'
+        method: 'epley',
+        bodyweight: bodyweight !== undefined ? bodyweight : null,
+        relativeStrength,
+        strengthCategory
       };
       saveSession(session);
     }
