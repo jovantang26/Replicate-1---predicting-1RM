@@ -215,6 +215,73 @@ describe('storage', () => {
       expect(sessions[0]).toEqual(session1);
       expect(sessions[1]).toEqual(session2);
     });
+
+    it('should save session with bodyweight and relative strength', () => {
+      const session: Session = {
+        date: '2025-11-10T00:00:00.000Z',
+        exerciseName: 'bench_press',
+        exerciseType: 'barbell',
+        sets: 3,
+        weight: 225,
+        reps: 5,
+        estimated1RM: 263,
+        method: 'epley',
+        bodyweight: 180,
+        relativeStrength: 263 / 180,
+        strengthCategory: 'intermediate'
+      };
+
+      saveSession(session);
+      const sessions = loadSessions();
+      expect(sessions).toHaveLength(1);
+      expect(sessions[0].bodyweight).toBe(180);
+      expect(sessions[0].relativeStrength).toBeCloseTo(1.461, 2);
+      expect(sessions[0].strengthCategory).toBe('intermediate');
+    });
+
+    it('should handle sessions without bodyweight (backward compatibility)', () => {
+      const oldSession: Session = {
+        date: '2025-11-10T00:00:00.000Z',
+        exerciseName: 'bench_press',
+        exerciseType: 'barbell',
+        sets: 3,
+        weight: 225,
+        reps: 5,
+        estimated1RM: 263,
+        method: 'epley'
+        // No bodyweight, relativeStrength, or strengthCategory
+      };
+
+      saveSession(oldSession);
+      const sessions = loadSessions();
+      expect(sessions).toHaveLength(1);
+      expect(sessions[0].bodyweight).toBeUndefined();
+      expect(sessions[0].relativeStrength).toBeUndefined();
+      expect(sessions[0].strengthCategory).toBeUndefined();
+    });
+
+    it('should load old sessions without crashing', () => {
+      // Create a session file with old format (no bodyweight fields)
+      fs.mkdirSync(originalDataDir, { recursive: true });
+      const oldSessions = [
+        {
+          date: '2025-11-10T00:00:00.000Z',
+          exerciseName: 'bench_press',
+          exerciseType: 'barbell',
+          sets: 3,
+          weight: 225,
+          reps: 5,
+          estimated1RM: 263,
+          method: 'epley'
+        }
+      ];
+      fs.writeFileSync(originalSessionsFile, JSON.stringify(oldSessions, null, 2), 'utf-8');
+
+      const sessions = loadSessions();
+      expect(sessions).toHaveLength(1);
+      expect(sessions[0].weight).toBe(225);
+      expect(sessions[0].bodyweight).toBeUndefined();
+    });
   });
 
   describe('listSessions', () => {
