@@ -1,6 +1,6 @@
 # 1RM Calculator
 
-A TypeScript CLI tool to calculate estimated one-rep maximum (1RM) using the Epley formula, with structured raw data collection for building a training dataset.
+A TypeScript CLI tool to calculate estimated one-rep maximum (1RM) using the Epley formula. Chunk 1 provides basic calculation functionality, and Chunk 2 adds structured raw data collection for building a training dataset.
 
 ## Overview
 
