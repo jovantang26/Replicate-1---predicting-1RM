@@ -4,6 +4,7 @@ import { estimate1RM } from './calc';
 import { saveSession, listSessions, loadSessions, Session } from './storage';
 import { getWeeklySummaries, formatWeeklyTable, WeeklySummary } from './weekly';
 import { computeRelativeStrength, classifyStrengthRatio } from './rel';
+import { calculateAdjusted1RM, validateFatigueRecoveryScore } from './fatigue';
 
 interface CliArgs {
   weight?: number;
@@ -13,12 +14,15 @@ interface CliArgs {
   exerciseType?: string;
   date?: string;
   bodyweight?: number | null;
+  fatigue?: number | null;
+  recovery?: number | null;
   json: boolean;
   save: boolean;
   list?: number; // undefined means --list was not provided, number means limit
   weekly: boolean; // true means --weekly was provided
   weeklyLimit?: number; // optional limit for weekly summaries
   rel: boolean; // true means --rel was provided
+  fatigueTrend: boolean; // true means --fatigue-trend was provided
 }
 
 function parseArgs(): CliArgs {
@@ -29,10 +33,16 @@ function parseArgs(): CliArgs {
   const listIndex = args.findIndex(arg => arg === '--list' || arg === '-list');
   const weeklyIndex = args.findIndex(arg => arg === '--weekly' || arg === '-weekly');
   const relIndex = args.findIndex(arg => arg === '--rel' || arg === '-rel');
+  const fatigueTrendIndex = args.findIndex(arg => arg === '--fatigue-trend' || arg === '-fatigue-trend');
+  
+  // Handle --fatigue-trend command
+  if (fatigueTrendIndex !== -1) {
+    return { json, save: false, list: undefined, weekly: false, weeklyLimit: undefined, rel: false, fatigueTrend: true };
+  }
   
   // Handle --rel command
   if (relIndex !== -1) {
-    return { json, save: false, list: undefined, weekly: false, weeklyLimit: undefined, rel: true };
+    return { json, save: false, list: undefined, weekly: false, weeklyLimit: undefined, rel: true, fatigueTrend: false };
   }
   
   // Handle --weekly command
@@ -49,7 +59,7 @@ function parseArgs(): CliArgs {
       }
     }
     
-    return { json, save: false, list: undefined, weekly: true, weeklyLimit: limit, rel: false };
+    return { json, save: false, list: undefined, weekly: true, weeklyLimit: limit, rel: false, fatigueTrend: false };
   }
   
   // Handle --list command
@@ -65,15 +75,16 @@ function parseArgs(): CliArgs {
       }
     }
     
-    return { json, save: false, list: limit, weekly: false, weeklyLimit: undefined, rel: false };
+    return { json, save: false, list: limit, weekly: false, weeklyLimit: undefined, rel: false, fatigueTrend: false };
   }
   
   // Handle calculation command (requires weight and reps)
   if (args.length < 2) {
-    console.error('Usage: 1rm <weight> <reps> [--sets <n>] [--exercise <name>] [--equipment <type>] [--date <YYYY-MM-DD>] [--bw <weight>] [--save] [--json]');
+    console.error('Usage: 1rm <weight> <reps> [--sets <n>] [--exercise <name>] [--equipment <type>] [--date <YYYY-MM-DD>] [--bw <weight>] [--fatigue <0-10>] [--recovery <0-10>] [--save] [--json]');
     console.error('   or: 1rm --list [n] [--json]');
     console.error('   or: 1rm --weekly [--limit <n>] [--json]');
     console.error('   or: 1rm --rel [--json]');
+    console.error('   or: 1rm --fatigue-trend [--json]');
     process.exit(1);
   }
 
@@ -125,7 +136,31 @@ function parseArgs(): CliArgs {
     }
   }
 
-  return { weight, reps, sets, exerciseName, exerciseType, date, bodyweight, json, save, list: undefined, weekly: false, weeklyLimit: undefined, rel: false };
+  let fatigue: number | null | undefined = undefined;
+  const fatigueIndex = args.findIndex(arg => arg === '--fatigue' || arg === '-fatigue');
+  if (fatigueIndex !== -1 && fatigueIndex + 1 < args.length) {
+    const fatigueValue = parseFloat(args[fatigueIndex + 1]);
+    if (validateFatigueRecoveryScore(fatigueValue)) {
+      fatigue = fatigueValue;
+    } else {
+      console.error('Error: --fatigue must be a number between 0 and 10');
+      process.exit(1);
+    }
+  }
+
+  let recovery: number | null | undefined = undefined;
+  const recoveryIndex = args.findIndex(arg => arg === '--recovery' || arg === '-recovery');
+  if (recoveryIndex !== -1 && recoveryIndex + 1 < args.length) {
+    const recoveryValue = parseFloat(args[recoveryIndex + 1]);
+    if (validateFatigueRecoveryScore(recoveryValue)) {
+      recovery = recoveryValue;
+    } else {
+      console.error('Error: --recovery must be a number between 0 and 10');
+      process.exit(1);
+    }
+  }
+
+  return { weight, reps, sets, exerciseName, exerciseType, date, bodyweight, fatigue, recovery, json, save, list: undefined, weekly: false, weeklyLimit: undefined, rel: false, fatigueTrend: false };
 }
 
 function formatSessionTable(sessions: Session[]): string {
@@ -174,9 +209,44 @@ function formatRelativeStrengthTable(sessions: Session[]): string {
   return [header, separator, ...rows].join('\n');
 }
 
+function formatFatigueTrendTable(sessions: Session[]): string {
+  if (sessions.length === 0) {
+    return 'No sessions found.';
+  }
+
+  const header = 'date        exercise      weight reps est1RM fatigue recovery adj1RM';
+  const separator = '-'.repeat(75);
+  const rows = sessions.map(s => {
+    const date = new Date(s.date).toISOString().split('T')[0];
+    const exercise = s.exerciseName;
+    const weight = s.weight.toString();
+    const reps = s.reps.toString();
+    const est1RM = s.estimated1RM.toString();
+    const fatigue = s.fatigue !== null && s.fatigue !== undefined ? s.fatigue.toString() : 'N/A';
+    const recovery = s.recovery !== null && s.recovery !== undefined ? s.recovery.toString() : 'N/A';
+    const adj1RM = s.adjusted1RM !== null && s.adjusted1RM !== undefined ? s.adjusted1RM.toString() : 'N/A';
+    
+    return `${date.padEnd(12)} ${exercise.padEnd(14)} ${weight.padStart(6)} ${reps.padStart(4)} ${est1RM.padStart(6)} ${fatigue.padStart(7)} ${recovery.padStart(8)} ${adj1RM.padStart(6)}`;
+  });
+
+  return [header, separator, ...rows].join('\n');
+}
+
 function main() {
   try {
     const args = parseArgs();
+
+    // Handle --fatigue-trend command
+    if (args.fatigueTrend) {
+      const sessions = listSessions();
+      
+      if (args.json) {
+        console.log(JSON.stringify(sessions, null, 2));
+      } else {
+        console.log(formatFatigueTrendTable(sessions));
+      }
+      return;
+    }
 
     // Handle --rel command
     if (args.rel) {
@@ -226,7 +296,7 @@ function main() {
       process.exit(1);
     }
 
-    const { weight, reps, sets, exerciseName, exerciseType, date, bodyweight } = args;
+    const { weight, reps, sets, exerciseName, exerciseType, date, bodyweight, fatigue, recovery } = args;
     const estimated1RM = estimate1RM(weight, reps);
 
     // Validate required fields if saving
@@ -266,6 +336,9 @@ function main() {
       const relativeStrength = computeRelativeStrength(estimated1RM, bodyweight);
       const strengthCategory = classifyStrengthRatio(relativeStrength);
       
+      // Compute adjusted 1RM if fatigue/recovery are provided
+      const adjusted1RM = calculateAdjusted1RM(estimated1RM, recovery, fatigue);
+      
       session = {
         date: sessionDate,
         exerciseName: exerciseName!,
@@ -277,7 +350,10 @@ function main() {
         method: 'epley',
         bodyweight: bodyweight !== undefined ? bodyweight : null,
         relativeStrength,
-        strengthCategory
+        strengthCategory,
+        fatigue: fatigue !== undefined ? fatigue : null,
+        recovery: recovery !== undefined ? recovery : null,
+        adjusted1RM
       };
       saveSession(session);
     }
