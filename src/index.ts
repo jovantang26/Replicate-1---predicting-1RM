@@ -5,6 +5,8 @@ import { saveSession, listSessions, loadSessions, Session } from './storage';
 import { getWeeklySummaries, formatWeeklyTable, WeeklySummary } from './weekly';
 import { computeRelativeStrength, classifyStrengthRatio } from './rel';
 import { calculateAdjusted1RM, validateFatigueRecoveryScore } from './fatigue';
+import { computeTrend, TrendPoint } from './trend';
+import { trainModel, predict, saveModel, loadModel, PredictionInput } from './model';
 
 interface CliArgs {
   weight?: number;
@@ -23,6 +25,9 @@ interface CliArgs {
   weeklyLimit?: number; // optional limit for weekly summaries
   rel: boolean; // true means --rel was provided
   fatigueTrend: boolean; // true means --fatigue-trend was provided
+  trend: boolean; // true means --trend was provided
+  train: boolean; // true means --train was provided
+  predict: boolean; // true means --predict was provided
 }
 
 function parseArgs(): CliArgs {
@@ -34,15 +39,34 @@ function parseArgs(): CliArgs {
   const weeklyIndex = args.findIndex(arg => arg === '--weekly' || arg === '-weekly');
   const relIndex = args.findIndex(arg => arg === '--rel' || arg === '-rel');
   const fatigueTrendIndex = args.findIndex(arg => arg === '--fatigue-trend' || arg === '-fatigue-trend');
+  const trendIndex = args.findIndex(arg => arg === '--trend' || arg === '-trend');
+  const trainIndex = args.findIndex(arg => arg === '--train' || arg === '-train');
+  const predictIndex = args.findIndex(arg => arg === '--predict' || arg === '-predict');
+  
+  // Handle --train command
+  if (trainIndex !== -1) {
+    return { json, save: false, list: undefined, weekly: false, weeklyLimit: undefined, rel: false, fatigueTrend: false, trend: false, train: true, predict: false };
+  }
+  
+  // Handle --predict command
+  if (predictIndex !== -1) {
+    // For predict, we still need to parse weight and reps from the args
+    // Continue parsing instead of returning early
+  }
+  
+  // Handle --trend command
+  if (trendIndex !== -1) {
+    return { json, save: false, list: undefined, weekly: false, weeklyLimit: undefined, rel: false, fatigueTrend: false, trend: true, train: false, predict: false };
+  }
   
   // Handle --fatigue-trend command
   if (fatigueTrendIndex !== -1) {
-    return { json, save: false, list: undefined, weekly: false, weeklyLimit: undefined, rel: false, fatigueTrend: true };
+    return { json, save: false, list: undefined, weekly: false, weeklyLimit: undefined, rel: false, fatigueTrend: true, trend: false, train: false, predict: false };
   }
   
   // Handle --rel command
   if (relIndex !== -1) {
-    return { json, save: false, list: undefined, weekly: false, weeklyLimit: undefined, rel: true, fatigueTrend: false };
+    return { json, save: false, list: undefined, weekly: false, weeklyLimit: undefined, rel: true, fatigueTrend: false, trend: false, train: false, predict: false };
   }
   
   // Handle --weekly command
@@ -59,7 +83,7 @@ function parseArgs(): CliArgs {
       }
     }
     
-    return { json, save: false, list: undefined, weekly: true, weeklyLimit: limit, rel: false, fatigueTrend: false };
+    return { json, save: false, list: undefined, weekly: true, weeklyLimit: limit, rel: false, fatigueTrend: false, trend: false, train: false, predict: false };
   }
   
   // Handle --list command
@@ -75,23 +99,44 @@ function parseArgs(): CliArgs {
       }
     }
     
-    return { json, save: false, list: limit, weekly: false, weeklyLimit: undefined, rel: false, fatigueTrend: false };
+    return { json, save: false, list: limit, weekly: false, weeklyLimit: undefined, rel: false, fatigueTrend: false, trend: false, train: false, predict: false };
   }
   
   // Handle calculation command (requires weight and reps)
-  if (args.length < 2) {
+  // For predict command, weight and reps are provided as flags, not positional args
+  if (predictIndex === -1 && args.length < 2) {
     console.error('Usage: 1rm <weight> <reps> [--sets <n>] [--exercise <name>] [--equipment <type>] [--date <YYYY-MM-DD>] [--bw <weight>] [--fatigue <0-10>] [--recovery <0-10>] [--save] [--json]');
     console.error('   or: 1rm --list [n] [--json]');
     console.error('   or: 1rm --weekly [--limit <n>] [--json]');
     console.error('   or: 1rm --rel [--json]');
     console.error('   or: 1rm --fatigue-trend [--json]');
+    console.error('   or: 1rm --trend [--json]');
+    console.error('   or: 1rm --train [--json]');
+    console.error('   or: 1rm --predict --weight <n> --reps <n> [--sets <n>] [--bw <n>] [--fatigue <0-10>] [--recovery <0-10>] [--json]');
     process.exit(1);
   }
 
-  const weight = parseFloat(args[0]);
-  const reps = parseInt(args[1], 10);
+  let weight: number | undefined;
+  let reps: number | undefined;
 
-  if (isNaN(weight) || isNaN(reps)) {
+  // For predict command, weight and reps come from flags
+  if (predictIndex !== -1) {
+    const weightIndex = args.findIndex(arg => arg === '--weight' || arg === '-weight');
+    if (weightIndex !== -1 && weightIndex + 1 < args.length) {
+      weight = parseFloat(args[weightIndex + 1]);
+    }
+    
+    const repsIndex = args.findIndex(arg => arg === '--reps' || arg === '-reps');
+    if (repsIndex !== -1 && repsIndex + 1 < args.length) {
+      reps = parseInt(args[repsIndex + 1], 10);
+    }
+  } else {
+    // For regular calculation, weight and reps are positional
+    weight = parseFloat(args[0]);
+    reps = parseInt(args[1], 10);
+  }
+
+  if (predictIndex === -1 && (isNaN(weight!) || isNaN(reps!))) {
     console.error('Error: weight and reps must be valid numbers');
     process.exit(1);
   }
@@ -160,7 +205,7 @@ function parseArgs(): CliArgs {
     }
   }
 
-  return { weight, reps, sets, exerciseName, exerciseType, date, bodyweight, fatigue, recovery, json, save, list: undefined, weekly: false, weeklyLimit: undefined, rel: false, fatigueTrend: false };
+  return { weight, reps, sets, exerciseName, exerciseType, date, bodyweight, fatigue, recovery, json, save, list: undefined, weekly: false, weeklyLimit: undefined, rel: false, fatigueTrend: false, trend: false, train: trainIndex !== -1, predict: predictIndex !== -1 };
 }
 
 function formatSessionTable(sessions: Session[]): string {
@@ -232,9 +277,155 @@ function formatFatigueTrendTable(sessions: Session[]): string {
   return [header, separator, ...rows].join('\n');
 }
 
+function formatTrendTable(trendPoints: TrendPoint[]): string {
+  if (trendPoints.length === 0) {
+    return 'No trend data found.';
+  }
+
+  const header = 'Week   est1RM   MA3     MA5     Delta';
+  const separator = '-'.repeat(40);
+  const rows = trendPoints.map(point => {
+    const week = point.week.toString().padStart(4);
+    const est1RM = point.est1RM.toFixed(1).padStart(7);
+    const ma3 = point.ma3 !== null ? point.ma3.toFixed(1).padStart(7) : 'N/A'.padStart(7);
+    const ma5 = point.ma5 !== null ? point.ma5.toFixed(1).padStart(7) : 'N/A'.padStart(7);
+    const delta = point.delta !== null ? (point.delta >= 0 ? '+' : '') + point.delta.toFixed(1).padStart(6) : 'N/A'.padStart(7);
+    
+    return `${week}   ${est1RM}   ${ma3}   ${ma5}   ${delta}`;
+  });
+
+  return [header, separator, ...rows].join('\n');
+}
+
 function main() {
   try {
     const args = parseArgs();
+
+    // Handle --train command
+    if (args.train) {
+      const sessions = loadSessions();
+      
+      if (sessions.length === 0) {
+        console.error('Error: No sessions found. Cannot train model without data.');
+        process.exit(1);
+      }
+      
+      try {
+        const model = trainModel(sessions);
+        saveModel(model);
+        
+        if (args.json) {
+          console.log(JSON.stringify({
+            success: true,
+            message: 'Model trained successfully',
+            sessionCount: model.sessionCount,
+            trainingDate: model.trainingDate,
+            coefficients: model.coefficients
+          }, null, 2));
+        } else {
+          console.log(`Model trained successfully!`);
+          console.log(`Training sessions: ${model.sessionCount}`);
+          console.log(`Training date: ${new Date(model.trainingDate).toLocaleString()}`);
+          console.log(`Model saved to: data/model.json`);
+          console.log(`\nCoefficients:`);
+          console.log(`  Intercept: ${model.coefficients.b0.toFixed(3)}`);
+          console.log(`  Weight: ${model.coefficients.b1.toFixed(3)}`);
+          console.log(`  Reps: ${model.coefficients.b2.toFixed(3)}`);
+          console.log(`  Sets: ${model.coefficients.b3.toFixed(3)}`);
+          console.log(`  Bodyweight: ${model.coefficients.b4.toFixed(3)}`);
+          console.log(`  Relative Strength: ${model.coefficients.b5.toFixed(3)}`);
+          console.log(`  Fatigue: ${model.coefficients.b6.toFixed(3)}`);
+          console.log(`  Recovery: ${model.coefficients.b7.toFixed(3)}`);
+        }
+      } catch (error) {
+        if (error instanceof Error) {
+          console.error(`Error training model: ${error.message}`);
+        } else {
+          console.error('An unexpected error occurred during training');
+        }
+        process.exit(1);
+      }
+      return;
+    }
+
+    // Handle --predict command
+    if (args.predict) {
+      const model = loadModel();
+      
+      if (!model) {
+        console.error('Error: No trained model found. Run --train first to create a model.');
+        process.exit(1);
+      }
+      
+      // For prediction, we need at least weight and reps
+      if (args.weight === undefined || args.reps === undefined) {
+        console.error('Error: --weight and --reps are required for prediction');
+        process.exit(1);
+      }
+      
+      const input: PredictionInput = {
+        weight: args.weight,
+        reps: args.reps,
+        sets: args.sets || 3, // default to 3 sets if not provided
+        bodyweight: args.bodyweight,
+        relativeStrength: null, // will be calculated if bodyweight is provided
+        fatigue: args.fatigue,
+        recovery: args.recovery
+      };
+      
+      try {
+        const prediction = predict(model, input);
+        
+        if (args.json) {
+          console.log(JSON.stringify({
+            prediction,
+            input,
+            modelInfo: {
+              trainingDate: model.trainingDate,
+              sessionCount: model.sessionCount
+            }
+          }, null, 2));
+        } else {
+          console.log(`Predicted 1RM: ${prediction} lb`);
+          console.log(`\nInput:`);
+          console.log(`  Weight: ${input.weight} lb`);
+          console.log(`  Reps: ${input.reps}`);
+          console.log(`  Sets: ${input.sets}`);
+          if (input.bodyweight) {
+            console.log(`  Bodyweight: ${input.bodyweight} lb`);
+          }
+          if (input.fatigue !== null && input.fatigue !== undefined) {
+            console.log(`  Fatigue: ${input.fatigue}/10`);
+          }
+          if (input.recovery !== null && input.recovery !== undefined) {
+            console.log(`  Recovery: ${input.recovery}/10`);
+          }
+          console.log(`\nModel trained on ${model.sessionCount} sessions (${new Date(model.trainingDate).toLocaleDateString()})`);
+        }
+      } catch (error) {
+        if (error instanceof Error) {
+          console.error(`Error making prediction: ${error.message}`);
+        } else {
+          console.error('An unexpected error occurred during prediction');
+        }
+        process.exit(1);
+      }
+      return;
+    }
+
+    // Handle --trend command
+    if (args.trend) {
+      const allSessions = loadSessions();
+      const weeklySummaries = getWeeklySummaries(allSessions);
+      const trendPoints = computeTrend(weeklySummaries);
+      
+      if (args.json) {
+        console.log(JSON.stringify(trendPoints, null, 2));
+      } else {
+        console.log(formatTrendTable(trendPoints));
+      }
+      return;
+    }
 
     // Handle --fatigue-trend command
     if (args.fatigueTrend) {
