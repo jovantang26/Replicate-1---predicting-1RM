@@ -13,11 +13,29 @@ describe('weekly', () => {
   beforeEach(() => {
     // Backup existing file if it exists
     if (fs.existsSync(originalSessionsFile)) {
-      fs.copyFileSync(originalSessionsFile, backupSessionsFile);
+      try {
+        fs.copyFileSync(originalSessionsFile, backupSessionsFile);
+      } catch {
+        // Ignore backup errors
+      }
     }
-    // Remove data directory if it exists
+    // Try to remove data directory if it exists (may fail due to OneDrive locking)
     if (fs.existsSync(originalDataDir)) {
-      fs.rmSync(originalDataDir, { recursive: true, force: true });
+      try {
+        // Remove files first
+        const files = fs.readdirSync(originalDataDir);
+        for (const file of files) {
+          try {
+            fs.unlinkSync(path.join(originalDataDir, file));
+          } catch {
+            // Ignore if locked
+          }
+        }
+        // Try to remove directory
+        fs.rmSync(originalDataDir, { recursive: true, force: true });
+      } catch {
+        // Ignore if directory is locked by OneDrive
+      }
     }
   });
 
@@ -41,7 +59,11 @@ describe('weekly', () => {
             // Ignore errors
           }
         }
-        fs.rmdirSync(originalDataDir);
+        try {
+          fs.rmdirSync(originalDataDir);
+        } catch {
+          // Ignore if directory is locked
+        }
       }
     } catch {
       // Ignore errors - directory might be locked by OneDrive
