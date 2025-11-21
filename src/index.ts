@@ -27,13 +27,10 @@ interface CliArgs {
   weeklyLimit?: number; // optional limit for weekly summaries
   rel: boolean; // true means --rel was provided
   fatigueTrend: boolean; // true means --fatigue-trend was provided
-<<<<<<< HEAD
   help: boolean; // true means --help was provided
   version: boolean; // true means --version was provided
   train: boolean; // true means --train was provided
   predict: boolean; // true means --predict was provided
-=======
->>>>>>> feat/chunk-6-long-term-trends
   trend: boolean; // true means --trend was provided
 }
 
@@ -46,7 +43,6 @@ function parseArgs(): CliArgs {
   const weeklyIndex = args.findIndex(arg => arg === '--weekly' || arg === '-weekly');
   const relIndex = args.findIndex(arg => arg === '--rel' || arg === '-rel');
   const fatigueTrendIndex = args.findIndex(arg => arg === '--fatigue-trend' || arg === '-fatigue-trend');
-<<<<<<< HEAD
   const helpIndex = args.findIndex(arg => arg === '--help' || arg === '-help' || arg === '-h');
   const versionIndex = args.findIndex(arg => arg === '--version' || arg === '-version' || arg === '-v');
   const trainIndex = args.findIndex(arg => arg === '--train' || arg === '-train');
@@ -76,31 +72,16 @@ function parseArgs(): CliArgs {
   // Handle --trend command
   if (trendIndex !== -1) {
     return { json, save: false, list: undefined, weekly: false, weeklyLimit: undefined, rel: false, fatigueTrend: false, help: false, version: false, train: false, predict: false, trend: true };
-=======
-  const trendIndex = args.findIndex(arg => arg === '--trend' || arg === '-trend');
-  
-  // Handle --trend command
-  if (trendIndex !== -1) {
-    return { json, save: false, list: undefined, weekly: false, weeklyLimit: undefined, rel: false, fatigueTrend: false, trend: true };
->>>>>>> feat/chunk-6-long-term-trends
   }
   
   // Handle --fatigue-trend command
   if (fatigueTrendIndex !== -1) {
-<<<<<<< HEAD
     return { json, save: false, list: undefined, weekly: false, weeklyLimit: undefined, rel: false, fatigueTrend: true, help: false, version: false, train: false, predict: false, trend: false };
-=======
-    return { json, save: false, list: undefined, weekly: false, weeklyLimit: undefined, rel: false, fatigueTrend: true, trend: false };
->>>>>>> feat/chunk-6-long-term-trends
   }
   
   // Handle --rel command
   if (relIndex !== -1) {
-<<<<<<< HEAD
     return { json, save: false, list: undefined, weekly: false, weeklyLimit: undefined, rel: true, fatigueTrend: false, help: false, version: false, train: false, predict: false, trend: false };
-=======
-    return { json, save: false, list: undefined, weekly: false, weeklyLimit: undefined, rel: true, fatigueTrend: false, trend: false };
->>>>>>> feat/chunk-6-long-term-trends
   }
   
   // Handle --weekly command
@@ -117,11 +98,7 @@ function parseArgs(): CliArgs {
       }
     }
     
-<<<<<<< HEAD
     return { json, save: false, list: undefined, weekly: true, weeklyLimit: limit, rel: false, fatigueTrend: false, help: false, version: false, train: false, predict: false, trend: false };
-=======
-    return { json, save: false, list: undefined, weekly: true, weeklyLimit: limit, rel: false, fatigueTrend: false, trend: false };
->>>>>>> feat/chunk-6-long-term-trends
   }
   
   // Handle --list command
@@ -137,16 +114,11 @@ function parseArgs(): CliArgs {
       }
     }
     
-<<<<<<< HEAD
     return { json, save: false, list: limit, weekly: false, weeklyLimit: undefined, rel: false, fatigueTrend: false, help: false, version: false, train: false, predict: false, trend: false };
-=======
-    return { json, save: false, list: limit, weekly: false, weeklyLimit: undefined, rel: false, fatigueTrend: false, trend: false };
->>>>>>> feat/chunk-6-long-term-trends
   }
   
   // Handle calculation command (requires weight and reps)
   if (args.length < 2) {
-<<<<<<< HEAD
     console.error('Usage: 1rm <weight> <reps> [options]');
     console.error('   or: 1rm --help                     # Show detailed help');
     console.error('   or: 1rm --version                  # Show version info');
@@ -159,14 +131,6 @@ function parseArgs(): CliArgs {
     console.error('   or: 1rm --predict [--json]         # Predict with ML');
     console.error('');
     console.error('Run "1rm --help" for detailed usage information.');
-=======
-    console.error('Usage: 1rm <weight> <reps> [--sets <n>] [--exercise <name>] [--equipment <type>] [--date <YYYY-MM-DD>] [--bw <weight>] [--fatigue <0-10>] [--recovery <0-10>] [--save] [--json]');
-    console.error('   or: 1rm --list [n] [--json]');
-    console.error('   or: 1rm --weekly [--limit <n>] [--json]');
-    console.error('   or: 1rm --rel [--json]');
-    console.error('   or: 1rm --fatigue-trend [--json]');
-    console.error('   or: 1rm --trend [--json]');
->>>>>>> feat/chunk-6-long-term-trends
     process.exit(1);
   }
 
@@ -242,7 +206,6 @@ function parseArgs(): CliArgs {
     }
   }
 
-<<<<<<< HEAD
   return { weight, reps, sets, exerciseName, exerciseType, date, bodyweight, fatigue, recovery, json, save, list: undefined, weekly: false, weeklyLimit: undefined, rel: false, fatigueTrend: false, help: false, version: false, train: false, predict: false, trend: false };
 }
 
@@ -311,9 +274,6 @@ function showVersion(): void {
     console.log('1RM Calculator v0.1.0');
     console.log('Error reading version information');
   }
-=======
-  return { weight, reps, sets, exerciseName, exerciseType, date, bodyweight, fatigue, recovery, json, save, list: undefined, weekly: false, weeklyLimit: undefined, rel: false, fatigueTrend: false, trend: false };
->>>>>>> feat/chunk-6-long-term-trends
 }
 
 function formatSessionTable(sessions: Session[]): string {
@@ -409,7 +369,6 @@ function main() {
   try {
     const args = parseArgs();
 
-<<<<<<< HEAD
     // Handle --help command
     if (args.help) {
       showHelp();
@@ -501,8 +460,6 @@ function main() {
       return;
     }
 
-=======
->>>>>>> feat/chunk-6-long-term-trends
     // Handle --trend command
     if (args.trend) {
       const allSessions = loadSessions();
@@ -512,13 +469,9 @@ function main() {
       if (args.json) {
         console.log(JSON.stringify(trendPoints, null, 2));
       } else {
-<<<<<<< HEAD
         // Sort in descending order for display (most recent first)
         const displayPoints = [...trendPoints].sort((a, b) => b.week - a.week);
         console.log(formatTrendTable(displayPoints));
-=======
-        console.log(formatTrendTable(trendPoints));
->>>>>>> feat/chunk-6-long-term-trends
       }
       return;
     }
