@@ -13,6 +13,9 @@ export interface Session {
   bodyweight?: number | null;
   relativeStrength?: number | null;
   strengthCategory?: string | undefined; // e.g., novice/intermediate/advanced/elite
+  fatigue?: number | null;
+  recovery?: number | null;
+  adjusted1RM?: number | null;
 }
 
 const DATA_DIR = path.resolve(__dirname, '..', 'data');
