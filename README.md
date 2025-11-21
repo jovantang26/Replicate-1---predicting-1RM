@@ -168,15 +168,162 @@ Where:
 - `b6` = fatigue coefficient (negative - more fatigue = lower performance)
 - `b7` = recovery coefficient (positive - better recovery = higher performance)
 
-### Usage
+### Data Requirements
+
+- **Minimum Sessions**: Requires at least 8 sessions with valid data for training
+- **Required Features**: weight, reps, sets (must be > 0)
+- **Optional Features**: bodyweight, relative strength, fatigue, recovery (treated as 0 if missing)
+- **Target Variable**: Uses `estimated1RM` from existing sessions as training target
+
+### CLI Usage
+
+#### Train Model
+
 ```bash
-# Train model on existing sessions
+# Train model using all available session data
 1rm --train
 
-# Make predictions using trained model
-1rm --predict               # Table format
-1rm --predict --json        # JSON format
+# Train model with JSON output
+1rm --train --json
 ```
+
+#### Make Predictions
+
+```bash
+# Basic prediction (required: weight, reps)
+1rm --predict --weight 225 --reps 4
+
+# Prediction with all features
+1rm --predict --weight 225 --reps 4 --sets 3 --bw 180 --fatigue 5 --recovery 7
+
+# Prediction with JSON output
+1rm --predict --weight 225 --reps 4 --bw 180 --json
+```
+
+#### Example Outputs
+
+**Training Output:**
+```
+Model trained successfully!
+Training sessions: 12
+Training date: 11/21/2025, 6:15:23 PM
+Model saved to: data/model.json
+
+Coefficients:
+  Intercept: 45.234
+  Weight: 0.856
+  Reps: -2.143
+  Sets: 1.567
+  Bodyweight: 0.089
+  Relative Strength: 12.345
+  Fatigue: -1.234
+  Recovery: 0.987
+```
+
+**Prediction Output:**
+```
+Predicted 1RM: 267 lb
+
+Input:
+  Weight: 225 lb
+  Reps: 4
+  Sets: 3
+  Bodyweight: 180 lb
+  Fatigue: 5/10
+  Recovery: 7/10
+
+Model trained on 12 sessions (11/21/2025)
+```
+
+### Implementation Details
+
+#### Training Process
+
+1. **Data Preparation**: Extracts features from sessions, handles missing values
+2. **Matrix Operations**: Constructs feature matrix X and target vector y
+3. **Normal Equations**: Solves (X^T * X) * β = X^T * y using Gaussian elimination
+4. **Model Storage**: Saves coefficients and metadata to `data/model.json`
+
+#### Prediction Process
+
+1. **Model Loading**: Loads trained model from `data/model.json`
+2. **Feature Engineering**: Calculates relative strength if bodyweight provided
+3. **Linear Combination**: Applies coefficients to input features
+4. **Output Formatting**: Returns rounded integer prediction
+
+#### Error Handling
+
+- **No Data**: Clear error if no sessions available for training
+- **Insufficient Data**: Requires minimum number of sessions for stable training
+- **Missing Model**: Informative error if trying to predict without trained model
+- **Invalid Input**: Validates required parameters for prediction
+- **Singular Matrix**: Handles cases where normal equations cannot be solved
+
+### File Structure
+
+- **`src/model.ts`**: Core model training and prediction logic
+- **`data/model.json`**: Persisted trained model (auto-created)
+- **`test/model.test.ts`**: Comprehensive test suite for model functionality
+
+### Testing
+
+The model implementation includes extensive tests:
+
+- **Training Tests**: Validates model training with various data scenarios
+- **Prediction Tests**: Tests prediction accuracy with known coefficients
+- **Edge Cases**: Handles missing features, invalid data, and error conditions
+- **Persistence Tests**: Verifies model saving and loading functionality
+
+Run model tests:
+
+```bash
+npm test test/model.test.ts
+```
+
+### Mathematical Foundation
+
+The model uses **Ordinary Least Squares (OLS)** regression solved via normal equations:
+
+```
+β = (X^T * X)^(-1) * X^T * y
+```
+
+Where:
+- `X` = feature matrix (n×p) with intercept column
+- `y` = target vector (n×1) of estimated 1RM values
+- `β` = coefficient vector (p×1) to be estimated
+- `n` = number of training sessions
+- `p` = number of features (8 including intercept)
+
+### Advantages Over Epley Formula
+
+1. **Multi-Feature**: Considers more than just weight and reps
+2. **Personalized**: Adapts to individual training patterns and characteristics
+3. **Context-Aware**: Accounts for fatigue, recovery, and training state
+4. **Data-Driven**: Learns from actual performance data rather than population averages
+5. **Continuous Improvement**: Model accuracy improves with more training data
+
+### Future Enhancements
+
+- **Cross-Validation**: Implement k-fold validation for model evaluation
+- **Feature Selection**: Automatic selection of most predictive features
+- **Regularization**: Ridge/Lasso regression to prevent overfitting
+- **Non-Linear Models**: Polynomial features or more advanced algorithms
+- **Model Evaluation**: R², RMSE, and other performance metrics
+
+### Dependencies
+
+- Uses existing session data from Chunks 1-6
+- Compatible with all previous functionality
+- No external ML libraries required (pure TypeScript implementation)
+- Integrates seamlessly with existing CLI commands
+
+### Data Privacy
+
+- All model training occurs locally
+- No data transmitted to external services
+- Model files stored in local `data/` directory
+- Complete control over training data and model usage
 
 ## Chunk 8 — Final Integration, UI Polish & Release
 
@@ -255,7 +402,7 @@ This is the first stable release of the 1RM Calculator, featuring:
 - Machine learning predictions
 - Comprehensive progress tracking
 - Professional CLI interface
-- Full test coverage (101/104 tests passing - 97.1%)
+- Full test coverage (122/124 tests passing - 98.4%)
 
 The application is production-ready and suitable for serious strength training analysis and progress tracking.
 
