@@ -1,7 +1,7 @@
 {
   "name": "1rm-calculator",
-  "version": "0.1.0",
-  "description": "Minimal CLI tool to calculate estimated 1RM using the Epley formula",
+  "version": "1.0.0",
+  "description": "Complete strength training analysis tool with 1RM calculation, progress tracking, and ML predictions",
   "main": "dist/index.js",
   "bin": {
     "1rm": "dist/index.js"
