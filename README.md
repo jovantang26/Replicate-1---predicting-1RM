@@ -90,3 +90,62 @@ Run tests with:
 ```bash
 npm test test/trend.test.ts
 ```
+
+### Examples
+
+```bash
+# Example 1: View trend analysis table
+node dist/index.js --trend
+# Week   est1RM   MA3     MA5     Delta
+# ----------------------------------------
+#    1    250.0     N/A     N/A     N/A
+#    2    255.0     N/A     N/A    +5.0
+#    3    260.0   255.0     N/A    +5.0
+#    4    265.0   260.0     N/A    +5.0
+#    5    270.0   265.0   260.0    +5.0
+
+# Example 2: View trend analysis as JSON
+node dist/index.js --trend --json
+# [
+#   {
+#     "week": 1,
+#     "est1RM": 250.0,
+#     "ma3": null,
+#     "ma5": null,
+#     "delta": null
+#   },
+#   {
+#     "week": 2,
+#     "est1RM": 255.0,
+#     "ma3": null,
+#     "ma5": null,
+#     "delta": 5.0
+#   },
+#   ...
+# ]
+
+# Example 3: Requires existing session data
+node dist/index.js 225 5 --sets 3 --exercise bench_press --equipment barbell --save
+node dist/index.js 230 4 --sets 3 --exercise bench_press --equipment barbell --save
+node dist/index.js --weekly  # Generate weekly summaries first
+node dist/index.js --trend   # Then view trends
+```
+
+### Project Structure
+
+```
+1rm-calculator/
+  ├─ src/
+  │   ├─ index.ts            # CLI entrypoint (includes --trend command)
+  │   ├─ calc.ts             # Pure 1RM calculation function
+  │   ├─ storage.ts          # Session persistence
+  │   ├─ weekly.ts           # Weekly analysis (data source for trends)
+  │   └─ trend.ts            # Long-term trend analysis (Chunk 6)
+  ├─ test/
+  │   ├─ calc.test.ts        # Unit tests for calculation
+  │   ├─ storage.test.ts     # Tests for sessions
+  │   ├─ weekly.test.ts      # Tests for weekly analysis
+  │   └─ trend.test.ts       # Tests for trend analysis (Chunk 6)
+  └─ data/
+      └─ sessions.json       # Session history
+```
