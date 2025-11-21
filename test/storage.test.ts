@@ -311,6 +311,59 @@ describe('storage', () => {
       expect(sessions).toHaveLength(1);
       expect(sessions[0].weight).toBe(225);
       expect(sessions[0].bodyweight).toBeUndefined();
+      expect(sessions[0].fatigue).toBeUndefined();
+      expect(sessions[0].recovery).toBeUndefined();
+      expect(sessions[0].adjusted1RM).toBeUndefined();
+    });
+
+    it('should save session with fatigue and recovery', () => {
+      const session: Session = {
+        date: '2025-11-10T00:00:00.000Z',
+        exerciseName: 'bench_press',
+        exerciseType: 'barbell',
+        sets: 3,
+        weight: 225,
+        reps: 5,
+        estimated1RM: 263,
+        method: 'epley',
+        bodyweight: 180,
+        relativeStrength: 263 / 180,
+        strengthCategory: 'intermediate',
+        fatigue: 6,
+        recovery: 4,
+        adjusted1RM: 258 // 263 * 0.98 - 3 = 258 (rounded)
+      };
+
+      saveSession(session);
+      const sessions = loadSessions();
+      expect(sessions).toHaveLength(1);
+      expect(sessions[0].fatigue).toBe(6);
+      expect(sessions[0].recovery).toBe(4);
+      expect(sessions[0].adjusted1RM).toBe(258);
+    });
+
+    it('should handle sessions without fatigue/recovery (backward compatibility)', () => {
+      const sessionWithoutFatigue: Session = {
+        date: '2025-11-10T00:00:00.000Z',
+        exerciseName: 'bench_press',
+        exerciseType: 'barbell',
+        sets: 3,
+        weight: 225,
+        reps: 5,
+        estimated1RM: 263,
+        method: 'epley',
+        bodyweight: 180,
+        relativeStrength: 263 / 180,
+        strengthCategory: 'intermediate'
+        // No fatigue, recovery, or adjusted1RM
+      };
+
+      saveSession(sessionWithoutFatigue);
+      const sessions = loadSessions();
+      expect(sessions).toHaveLength(1);
+      expect(sessions[0].fatigue).toBeUndefined();
+      expect(sessions[0].recovery).toBeUndefined();
+      expect(sessions[0].adjusted1RM).toBeUndefined();
     });
   });
 
