@@ -29,168 +29,101 @@ Each session can now include:
 ```
 recoveryModifier = 1 + (recovery - 5) * 0.02
 ```
-- Recovery 5 = no modifier (1.0)
-- Recovery 10 = +10% modifier (1.1)
-- Recovery 0 = -10% modifier (0.9)
+
+Examples:
+- Recovery 0: modifier = 0.90 (10% penalty)
+- Recovery 5: modifier = 1.00 (neutral)
+- Recovery 10: modifier = 1.10 (10% bonus)
 
 #### Fatigue Penalty
 ```
 fatiguePenalty = fatigue * 0.5
 ```
-- Fatigue 0 = no penalty (0 lbs)
-- Fatigue 10 = -5 lbs penalty
 
-#### Adjusted 1RM
+Examples:
+- Fatigue 0: penalty = 0 lbs
+- Fatigue 5: penalty = 2.5 lbs
+- Fatigue 10: penalty = 5 lbs
+
+#### Final Adjusted 1RM
 ```
 adjusted1RM = estimated1RM * recoveryModifier - fatiguePenalty
 ```
 
-### Usage
+### CLI Usage
 
-#### Save Session with Fatigue and Recovery
-
+#### Save Session with Fatigue/Recovery
 ```bash
-node dist/index.js 225 5 --sets 3 --exercise bench_press --equipment barbell --bw 180 --fatigue 6 --recovery 4 --save
+# Basic session with fatigue and recovery
+1rm 225 5 --sets 3 --exercise bench_press --equipment barbell --bw 180 --fatigue 6 --recovery 4 --save
+
+# High fatigue, poor recovery
+1rm 200 8 --fatigue 8 --recovery 2 --save
+
+# Fresh and well-recovered
+1rm 250 3 --fatigue 1 --recovery 9 --save
 ```
 
-This saves a session with:
-- All standard fields (weight, reps, sets, exercise, bodyweight, etc.)
-- Fatigue: 6 (moderate fatigue)
-- Recovery: 4 (below average recovery)
-- Adjusted 1RM: calculated based on fatigue/recovery
-
-#### View Fatigue Trend Analysis
-
+#### View Fatigue Trends
 ```bash
-# Table format (default)
-node dist/index.js --fatigue-trend
+# Table format
+1rm --fatigue-trend
 
-# Output:
-# date        exercise      weight reps est1RM fatigue recovery adj1RM
-# ---------------------------------------------------------------------------
-# 2025-10-20  bench_press   225    5    263    6       4        255
-# 2025-10-19  bench_press   215    6    258    3       7        263
+# JSON format
+1rm --fatigue-trend --json
 ```
 
-#### JSON Output
-
-```bash
-node dist/index.js --fatigue-trend --json
-
-# Output:
-# [
-#   {
-#     "date": "2025-10-20T00:00:00.000Z",
-#     "exerciseName": "bench_press",
-#     "exerciseType": "barbell",
-#     "weight": 225,
-#     "reps": 5,
-#     "estimated1RM": 263,
-#     "fatigue": 6,
-#     "recovery": 4,
-#     "adjusted1RM": 255
-#   },
-#   ...
-# ]
+#### Example Output (Table)
+```
+date        exercise      weight reps est1RM fatigue recovery adj1RM
+2025-10-20  bench_press   225    5    263   6       4        258.0
+2025-10-19  squat         315    3    344   3       7        349.5
+2025-10-18  deadlift      405    2    421   8       3        413.0
 ```
 
-### Session Schema (Extended)
-
-Sessions now include optional fatigue/recovery fields:
-
+#### Example Output (JSON)
 ```json
-{
-  "date": "2025-11-10T00:00:00.000Z",
-  "exerciseName": "bench_press",
-  "exerciseType": "barbell",
-  "sets": 3,
-  "weight": 225,
-  "reps": 5,
-  "estimated1RM": 263,
-  "method": "epley",
-  "bodyweight": 180,
-  "relativeStrength": 1.46,
-  "strengthCategory": "intermediate",
-  "fatigue": 6,
-  "recovery": 4,
-  "adjusted1RM": 255
-}
+[
+  {
+    "date": "2025-10-20T00:00:00Z",
+    "exerciseName": "bench_press",
+    "exerciseType": "barbell",
+    "weight": 225,
+    "reps": 5,
+    "estimated1RM": 263,
+    "fatigue": 6,
+    "recovery": 4,
+    "adjusted1RM": 258.0
+  }
+]
 ```
 
-### CLI Flags (Chunk 5)
+### Technical Implementation
 
-- `--fatigue <0-10>` - Fatigue level (optional, 0-10 scale)
-- `--recovery <0-10>` - Recovery level (optional, 0-10 scale)
-- `--fatigue-trend` - View fatigue/recovery analysis table
-- `--fatigue-trend --json` - View fatigue/recovery analysis as JSON
+- **New CLI flags**: `--fatigue <0-10>` and `--recovery <0-10>`
+- **Storage**: Extended `Session` interface with optional fatigue/recovery fields
+- **Validation**: Input validation ensures scores are between 0-10
+- **Backward compatibility**: Old sessions without fatigue data load normally
+- **Error handling**: Invalid fatigue/recovery values show helpful error messages
 
-### Validation
+### Testing
 
-- **Fatigue**: Must be a number between 0 and 10 (inclusive) if provided
-- **Recovery**: Must be a number between 0 and 10 (inclusive) if provided
-- If fatigue or recovery is omitted, `null`, or invalid: adjusted1RM calculation uses default values
+All functionality is covered by comprehensive tests in `test/fatigue.test.ts`:
 
-### Backward Compatibility
+- Fatigue/recovery score validation (0-10 range)
+- Adjusted 1RM calculation accuracy
+- Missing field handling (null values)
+- Session storage and loading with new fields
+- CLI integration tests
 
-- Old sessions without fatigue/recovery fields load correctly
-- Missing fatigue/recovery fields are handled gracefully
-- Existing functionality (Chunks 1-4) remains unchanged
+### Use Cases
 
-### Examples
+This chunk enables tracking of:
 
-```bash
-# Example 1: Save with fatigue and recovery
-node dist/index.js 225 5 --sets 3 --exercise bench_press --equipment barbell --bw 180 --fatigue 6 --recovery 4 --save
-# Estimated 1RM: 263 lb
-# (Session saved with fatigue/recovery and adjusted 1RM)
+1. **Training periodization**: Monitor fatigue accumulation during intense phases
+2. **Recovery assessment**: Quantify sleep, nutrition, and stress impacts
+3. **Performance prediction**: More accurate 1RM estimates accounting for current state
+4. **Program adjustment**: Data-driven decisions about training intensity
+5. **Long-term trends**: Identify patterns in fatigue and recovery over time
 
-# Example 2: View fatigue trend table
-node dist/index.js --fatigue-trend
-# date        exercise      weight reps est1RM fatigue recovery adj1RM
-# 2025-10-20  bench_press   225    5    263    6       4        255
-
-# Example 3: Save with only fatigue (recovery defaults to neutral)
-node dist/index.js 200 8 --sets 4 --exercise squat --equipment barbell --fatigue 8 --save
-# (Session saved with fatigue, recovery defaults to neutral effect)
-
-# Example 4: Save without fatigue/recovery (still works)
-node dist/index.js 225 5 --sets 3 --exercise bench_press --equipment barbell --save
-# (Session saved without fatigue/recovery fields)
-```
-
-### Fatigue/Recovery Scale Guidelines
-
-#### Fatigue Scale (0-10)
-- **0-2**: Fully rested, excellent energy
-- **3-4**: Well rested, good energy
-- **5-6**: Moderate fatigue, average energy
-- **7-8**: High fatigue, low energy
-- **9-10**: Extremely fatigued, very low energy
-
-#### Recovery Scale (0-10)
-- **0-2**: Poor recovery (bad sleep, high stress, poor nutrition)
-- **3-4**: Below average recovery
-- **5-6**: Average recovery
-- **7-8**: Good recovery (good sleep, low stress, good nutrition)
-- **9-10**: Excellent recovery (optimal conditions)
-
-### Project Structure
-
-```
-1rm-calculator/
-  ├─ src/
-  │   ├─ index.ts            # CLI entrypoint (includes Chunk 5)
-  │   ├─ calc.ts             # Pure 1RM calculation function
-  │   ├─ storage.ts           # Session persistence (extended with fatigue/recovery)
-  │   ├─ weekly.ts            # Weekly analysis
-  │   ├─ rel.ts               # Relative strength calculation
-  │   └─ fatigue.ts           # Fatigue/recovery calculation (Chunk 5)
-  ├─ test/
-  │   ├─ calc.test.ts        # Unit tests for calculation
-  │   ├─ storage.test.ts     # Tests for sessions (includes Chunk 5 tests)
-  │   ├─ weekly.test.ts      # Tests for weekly analysis
-  │   ├─ rel.test.ts         # Tests for relative strength
-  │   └─ fatigue.test.ts     # Tests for fatigue/recovery (Chunk 5)
-  └─ data/
-      └─ sessions.json       # Session history
-```
+The fatigue and recovery data collected here will be valuable inputs for the machine learning model in later chunks.
