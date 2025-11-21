@@ -469,7 +469,9 @@ function main() {
       if (args.json) {
         console.log(JSON.stringify(trendPoints, null, 2));
       } else {
-        console.log(formatTrendTable(trendPoints));
+        // Sort in descending order for display (most recent first)
+        const displayPoints = [...trendPoints].sort((a, b) => b.week - a.week);
+        console.log(formatTrendTable(displayPoints));
       }
       return;
     }
