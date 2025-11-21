@@ -191,3 +191,83 @@ Where:
 - No data transmitted to external services
 - Model files stored in local `data/` directory
 - Complete control over training data and model usage
+
+### Examples
+
+```bash
+# Example 1: Train model with existing session data
+node dist/index.js 225 5 --sets 3 --exercise bench_press --equipment barbell --bw 180 --fatigue 3 --recovery 7 --save
+node dist/index.js 230 4 --sets 3 --exercise bench_press --equipment barbell --bw 180 --fatigue 4 --recovery 6 --save
+# ... add more sessions ...
+
+node dist/index.js --train
+# Model trained successfully!
+# Training sessions: 12
+# Training date: 11/21/2025, 6:15:23 PM
+# Model saved to: data/model.json
+# 
+# Coefficients:
+#   Intercept: 45.234
+#   Weight: 0.856
+#   Reps: -2.143
+#   Sets: 1.567
+#   Bodyweight: 0.089
+#   Relative Strength: 12.345
+#   Fatigue: -1.234
+#   Recovery: 0.987
+
+# Example 2: Make predictions with trained model
+node dist/index.js --predict --weight 225 --reps 4 --sets 3 --bw 180 --fatigue 5 --recovery 7
+# Predicted 1RM: 267 lb
+# 
+# Input:
+#   Weight: 225 lb
+#   Reps: 4
+#   Sets: 3
+#   Bodyweight: 180 lb
+#   Fatigue: 5/10
+#   Recovery: 7/10
+# 
+# Model trained on 12 sessions (11/21/2025)
+
+# Example 3: JSON output for programmatic use
+node dist/index.js --predict --weight 225 --reps 4 --bw 180 --json
+# {
+#   "predicted1RM": 267,
+#   "input": {
+#     "weight": 225,
+#     "reps": 4,
+#     "sets": 1,
+#     "bodyweight": 180,
+#     "relativeStrength": 1.18,
+#     "fatigue": 0,
+#     "recovery": 0
+#   },
+#   "model": {
+#     "trainingSessions": 12,
+#     "trainingDate": "2025-11-21T21:15:23.000Z"
+#   }
+# }
+```
+
+### Project Structure
+
+```
+1rm-calculator/
+  ├─ src/
+  │   ├─ index.ts            # CLI entrypoint (includes --train and --predict)
+  │   ├─ calc.ts             # Pure 1RM calculation function
+  │   ├─ storage.ts          # Session persistence
+  │   ├─ weekly.ts           # Weekly analysis
+  │   ├─ trend.ts            # Long-term trend analysis
+  │   └─ model.ts            # ML model training and prediction (Chunk 7)
+  ├─ test/
+  │   ├─ calc.test.ts        # Unit tests for calculation
+  │   ├─ storage.test.ts     # Tests for sessions
+  │   ├─ weekly.test.ts      # Tests for weekly analysis
+  │   ├─ trend.test.ts       # Tests for trend analysis
+  │   └─ model.test.ts       # Tests for ML model (Chunk 7)
+  └─ data/
+      ├─ sessions.json       # Session history
+      └─ model.json          # Trained model (auto-created)
+```
