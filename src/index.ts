@@ -5,6 +5,7 @@ import { saveSession, listSessions, loadSessions, Session } from './storage';
 import { getWeeklySummaries, formatWeeklyTable, WeeklySummary } from './weekly';
 import { computeRelativeStrength, classifyStrengthRatio } from './rel';
 import { calculateAdjusted1RM, validateFatigueRecoveryScore } from './fatigue';
+import { computeTrend, TrendPoint } from './trend';
 
 interface CliArgs {
   weight?: number;
@@ -23,6 +24,7 @@ interface CliArgs {
   weeklyLimit?: number; // optional limit for weekly summaries
   rel: boolean; // true means --rel was provided
   fatigueTrend: boolean; // true means --fatigue-trend was provided
+  trend: boolean; // true means --trend was provided
 }
 
 function parseArgs(): CliArgs {
@@ -34,15 +36,21 @@ function parseArgs(): CliArgs {
   const weeklyIndex = args.findIndex(arg => arg === '--weekly' || arg === '-weekly');
   const relIndex = args.findIndex(arg => arg === '--rel' || arg === '-rel');
   const fatigueTrendIndex = args.findIndex(arg => arg === '--fatigue-trend' || arg === '-fatigue-trend');
+  const trendIndex = args.findIndex(arg => arg === '--trend' || arg === '-trend');
+  
+  // Handle --trend command
+  if (trendIndex !== -1) {
+    return { json, save: false, list: undefined, weekly: false, weeklyLimit: undefined, rel: false, fatigueTrend: false, trend: true };
+  }
   
   // Handle --fatigue-trend command
   if (fatigueTrendIndex !== -1) {
-    return { json, save: false, list: undefined, weekly: false, weeklyLimit: undefined, rel: false, fatigueTrend: true };
+    return { json, save: false, list: undefined, weekly: false, weeklyLimit: undefined, rel: false, fatigueTrend: true, trend: false };
   }
   
   // Handle --rel command
   if (relIndex !== -1) {
-    return { json, save: false, list: undefined, weekly: false, weeklyLimit: undefined, rel: true, fatigueTrend: false };
+    return { json, save: false, list: undefined, weekly: false, weeklyLimit: undefined, rel: true, fatigueTrend: false, trend: false };
   }
   
   // Handle --weekly command
@@ -59,7 +67,7 @@ function parseArgs(): CliArgs {
       }
     }
     
-    return { json, save: false, list: undefined, weekly: true, weeklyLimit: limit, rel: false, fatigueTrend: false };
+    return { json, save: false, list: undefined, weekly: true, weeklyLimit: limit, rel: false, fatigueTrend: false, trend: false };
   }
   
   // Handle --list command
@@ -75,7 +83,7 @@ function parseArgs(): CliArgs {
       }
     }
     
-    return { json, save: false, list: limit, weekly: false, weeklyLimit: undefined, rel: false, fatigueTrend: false };
+    return { json, save: false, list: limit, weekly: false, weeklyLimit: undefined, rel: false, fatigueTrend: false, trend: false };
   }
   
   // Handle calculation command (requires weight and reps)
@@ -85,6 +93,7 @@ function parseArgs(): CliArgs {
     console.error('   or: 1rm --weekly [--limit <n>] [--json]');
     console.error('   or: 1rm --rel [--json]');
     console.error('   or: 1rm --fatigue-trend [--json]');
+    console.error('   or: 1rm --trend [--json]');
     process.exit(1);
   }
 
@@ -160,7 +169,7 @@ function parseArgs(): CliArgs {
     }
   }
 
-  return { weight, reps, sets, exerciseName, exerciseType, date, bodyweight, fatigue, recovery, json, save, list: undefined, weekly: false, weeklyLimit: undefined, rel: false, fatigueTrend: false };
+  return { weight, reps, sets, exerciseName, exerciseType, date, bodyweight, fatigue, recovery, json, save, list: undefined, weekly: false, weeklyLimit: undefined, rel: false, fatigueTrend: false, trend: false };
 }
 
 function formatSessionTable(sessions: Session[]): string {
@@ -232,9 +241,43 @@ function formatFatigueTrendTable(sessions: Session[]): string {
   return [header, separator, ...rows].join('\n');
 }
 
+function formatTrendTable(trendPoints: TrendPoint[]): string {
+  if (trendPoints.length === 0) {
+    return 'No trend data found.';
+  }
+
+  const header = 'Week   est1RM   MA3     MA5     Delta';
+  const separator = '-'.repeat(40);
+  const rows = trendPoints.map(point => {
+    const week = point.week.toString().padStart(4);
+    const est1RM = point.est1RM.toFixed(1).padStart(7);
+    const ma3 = point.ma3 !== null ? point.ma3.toFixed(1).padStart(7) : 'N/A'.padStart(7);
+    const ma5 = point.ma5 !== null ? point.ma5.toFixed(1).padStart(7) : 'N/A'.padStart(7);
+    const delta = point.delta !== null ? (point.delta >= 0 ? '+' : '') + point.delta.toFixed(1).padStart(6) : 'N/A'.padStart(7);
+    
+    return `${week}   ${est1RM}   ${ma3}   ${ma5}   ${delta}`;
+  });
+
+  return [header, separator, ...rows].join('\n');
+}
+
 function main() {
   try {
     const args = parseArgs();
+
+    // Handle --trend command
+    if (args.trend) {
+      const allSessions = loadSessions();
+      const weeklySummaries = getWeeklySummaries(allSessions);
+      const trendPoints = computeTrend(weeklySummaries);
+      
+      if (args.json) {
+        console.log(JSON.stringify(trendPoints, null, 2));
+      } else {
+        console.log(formatTrendTable(trendPoints));
+      }
+      return;
+    }
 
     // Handle --fatigue-trend command
     if (args.fatigueTrend) {
