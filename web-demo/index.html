@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1RM Calculator - Web Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .calculator-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 25px;
+            background: linear-gradient(135deg, #56ab2f, #a8e6cf);
+            border-radius: 15px;
+            color: white;
+            text-align: center;
+            display: none;
+        }
+
+        .result h3 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+
+        .result .value {
+            font-size: 3em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .feature-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+        }
+
+        .feature-icon {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+        }
+
+        .sessions-section {
+            margin-top: 30px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+        }
+
+        .session-item {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .session-date {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .session-details {
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💪 1RM Calculator</h1>
+            <p>Calculate your one-rep maximum using the proven Epley formula</p>
+        </div>
+
+        <div class="main-content">
+            <div class="calculator-section">
+                <h2>Calculate Your 1RM</h2>
+                <form id="calculator-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="weight">Weight (lbs)</label>
+                            <input type="number" id="weight" name="weight" min="1" step="0.5" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="reps">Reps</label>
+                            <input type="number" id="reps" name="reps" min="1" max="30" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="exercise">Exercise</label>
+                            <select id="exercise" name="exercise">
+                                <option value="bench_press">Bench Press</option>
+                                <option value="squat">Squat</option>
+                                <option value="deadlift">Deadlift</option>
+                                <option value="overhead_press">Overhead Press</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="bodyweight">Bodyweight (lbs) - Optional</label>
+                            <input type="number" id="bodyweight" name="bodyweight" min="50" step="0.5">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fatigue">Fatigue Level (1-10) - Optional</label>
+                            <input type="number" id="fatigue" name="fatigue" min="1" max="10">
+                        </div>
+                        <div class="form-group">
+                            <label for="recovery">Recovery Level (1-10) - Optional</label>
+                            <input type="number" id="recovery" name="recovery" min="1" max="10">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn">Calculate 1RM</button>
+                </form>
+
+                <div id="result" class="result">
+                    <h3>Your Estimated 1RM</h3>
+                    <div class="value" id="result-value">0 lbs</div>
+                    <div id="result-details"></div>
+                </div>
+            </div>
+
+            <div class="features">
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>Epley Formula</h3>
+                    <p>Uses the scientifically proven Epley formula: 1RM = weight × (1 + reps/30)</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💾</div>
+                    <h3>Session Storage</h3>
+                    <p>Save your workouts locally and track progress over time</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📈</div>
+                    <h3>Progress Tracking</h3>
+                    <p>View weekly summaries and long-term strength trends</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🤖</div>
+                    <h3>ML Predictions</h3>
+                    <p>Advanced machine learning model for more accurate predictions</p>
+                </div>
+            </div>
+
+            <div class="sessions-section">
+                <h2>Recent Sessions</h2>
+                <div id="sessions-list">
+                    <p>No sessions saved yet. Calculate and save your first workout!</p>
+                </div>
+                <button id="save-session" class="btn" style="margin-top: 20px; display: none;">Save This Session</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 1RM Calculation using Epley formula
+        function calculateEpley(weight, reps) {
+            if (reps === 1) {
+                return weight;
+            }
+            return Math.round(weight * (1 + reps / 30));
+        }
+
+        // Apply fatigue/recovery adjustments
+        function applyFatigueRecovery(est1RM, fatigue, recovery) {
+            if (!fatigue && !recovery) return est1RM;
+            
+            let adjustment = 1.0;
+            
+            if (fatigue) {
+                // Higher fatigue reduces performance (0.95 to 1.0)
+                adjustment *= (0.95 + (10 - fatigue) * 0.005);
+            }
+            
+            if (recovery) {
+                // Better recovery improves performance (1.0 to 1.05)
+                adjustment *= (1.0 + (recovery - 1) * 0.005);
+            }
+            
+            return Math.round(est1RM * adjustment);
+        }
+
+        // Calculate relative strength category
+        function getStrengthCategory(relativeStrength, exercise) {
+            if (!relativeStrength) return null;
+            
+            // Simplified categories for bench press
+            if (relativeStrength < 1.0) return "Novice";
+            if (relativeStrength < 1.25) return "Intermediate";
+            if (relativeStrength < 1.5) return "Advanced";
+            return "Elite";
+        }
+
+        // Load sessions from localStorage
+        function loadSessions() {
+            const sessions = localStorage.getItem('1rm-sessions');
+            return sessions ? JSON.parse(sessions) : [];
+        }
+
+        // Save session to localStorage
+        function saveSession(session) {
+            const sessions = loadSessions();
+            sessions.unshift(session); // Add to beginning
+            localStorage.setItem('1rm-sessions', JSON.stringify(sessions.slice(0, 50))); // Keep last 50
+            displaySessions();
+        }
+
+        // Display sessions
+        function displaySessions() {
+            const sessions = loadSessions();
+            const sessionsList = document.getElementById('sessions-list');
+            
+            if (sessions.length === 0) {
+                sessionsList.innerHTML = '<p>No sessions saved yet. Calculate and save your first workout!</p>';
+                return;
+            }
+            
+            sessionsList.innerHTML = sessions.slice(0, 10).map(session => `
+                <div class="session-item">
+                    <div class="session-date">${new Date(session.date).toLocaleDateString()}</div>
+                    <div class="session-details">
+                        ${session.exercise}: ${session.weight}lbs × ${session.reps} reps → 
+                        <strong>${session.estimated1RM}lbs 1RM</strong>
+                        ${session.relativeStrength ? ` (${session.relativeStrength.toFixed(2)}x BW)` : ''}
+                        ${session.category ? ` - ${session.category}` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Form submission handler
+        document.getElementById('calculator-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const weight = parseFloat(document.getElementById('weight').value);
+            const reps = parseInt(document.getElementById('reps').value);
+            const exercise = document.getElementById('exercise').value;
+            const bodyweight = parseFloat(document.getElementById('bodyweight').value) || null;
+            const fatigue = parseInt(document.getElementById('fatigue').value) || null;
+            const recovery = parseInt(document.getElementById('recovery').value) || null;
+            
+            // Calculate basic 1RM
+            const basicEst1RM = calculateEpley(weight, reps);
+            
+            // Apply fatigue/recovery adjustments
+            const adjustedEst1RM = applyFatigueRecovery(basicEst1RM, fatigue, recovery);
+            
+            // Calculate relative strength
+            const relativeStrength = bodyweight ? adjustedEst1RM / bodyweight : null;
+            const category = relativeStrength ? getStrengthCategory(relativeStrength, exercise) : null;
+            
+            // Display result
+            const resultDiv = document.getElementById('result');
+            const resultValue = document.getElementById('result-value');
+            const resultDetails = document.getElementById('result-details');
+            
+            resultValue.textContent = `${adjustedEst1RM} lbs`;
+            
+            let details = `Based on ${weight}lbs × ${reps} reps`;
+            if (bodyweight) {
+                details += `<br>Relative Strength: ${relativeStrength.toFixed(2)}x bodyweight`;
+                if (category) details += ` (${category})`;
+            }
+            if (fatigue || recovery) {
+                details += `<br>Adjusted for fatigue/recovery factors`;
+            }
+            
+            resultDetails.innerHTML = details;
+            resultDiv.style.display = 'block';
+            
+            // Show save button and store current calculation
+            const saveBtn = document.getElementById('save-session');
+            saveBtn.style.display = 'block';
+            saveBtn.onclick = function() {
+                const session = {
+                    date: new Date().toISOString(),
+                    weight,
+                    reps,
+                    exercise,
+                    estimated1RM: adjustedEst1RM,
+                    bodyweight,
+                    relativeStrength,
+                    category,
+                    fatigue,
+                    recovery,
+                    adjusted1RM: adjustedEst1RM !== basicEst1RM ? adjustedEst1RM : null
+                };
+                
+                saveSession(session);
+                saveBtn.textContent = 'Session Saved!';
+                saveBtn.disabled = true;
+                setTimeout(() => {
+                    saveBtn.textContent = 'Save This Session';
+                    saveBtn.disabled = false;
+                }, 2000);
+            };
+        });
+
+        // Load sessions on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            displaySessions();
+        });
+    </script>
+</body>
+</html>
