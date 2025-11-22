@@ -538,6 +538,9 @@ function main() {
 
     const { weight, reps, sets, exerciseName, exerciseType, date, bodyweight, fatigue, recovery } = args;
     const estimated1RM = estimate1RM(weight, reps);
+    
+    // Chunk 4 Fix: Set true1RM when reps === 1
+    const true1RM: number | null = reps === 1 ? weight : null;
 
     // Validate required fields if saving
     if (args.save) {
@@ -588,6 +591,7 @@ function main() {
         reps,
         estimated1RM,
         method: 'epley',
+        true1RM, // Chunk 4 Fix: Store true1RM when reps === 1
         bodyweight: bodyweight !== undefined ? bodyweight : null,
         relativeStrength,
         strengthCategory,

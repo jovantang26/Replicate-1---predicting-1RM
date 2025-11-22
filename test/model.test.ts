@@ -117,6 +117,7 @@ describe('Model Training and Prediction', () => {
           weight: 245,
           reps: 1,
           estimated1RM: 245,
+          true1RM: 245, // Chunk 4 Fix: true1RM when reps === 1
           method: 'epley',
           bodyweight: 170,
           relativeStrength: 1.44,
@@ -145,6 +146,7 @@ describe('Model Training and Prediction', () => {
           weight: 250,
           reps: 1,
           estimated1RM: 250,
+          true1RM: 250, // Chunk 4 Fix: true1RM when reps === 1
           method: 'epley',
           bodyweight: 195,
           relativeStrength: 1.28,
@@ -164,6 +166,91 @@ describe('Model Training and Prediction', () => {
           relativeStrength: 1.66,
           fatigue: 8,
           recovery: 4
+        },
+        // Add more sessions to meet minimum requirement (14 features = 14 sessions minimum)
+        {
+          date: '2025-01-09T00:00:00.000Z',
+          exerciseName: 'incline_bench',
+          exerciseType: 'barbell',
+          sets: 4,
+          weight: 200,
+          reps: 5,
+          estimated1RM: 233,
+          method: 'epley',
+          bodyweight: 180,
+          relativeStrength: 1.29,
+          fatigue: 5,
+          recovery: 7
+        },
+        {
+          date: '2025-01-10T00:00:00.000Z',
+          exerciseName: 'incline_smith',
+          exerciseType: 'machine',
+          sets: 3,
+          weight: 185,
+          reps: 6,
+          estimated1RM: 222,
+          method: 'epley',
+          bodyweight: 175,
+          relativeStrength: 1.27,
+          fatigue: 6,
+          recovery: 6
+        },
+        {
+          date: '2025-01-11T00:00:00.000Z',
+          exerciseName: 'chest_fly',
+          exerciseType: 'cable',
+          sets: 4,
+          weight: 50,
+          reps: 10,
+          estimated1RM: 67,
+          method: 'epley',
+          bodyweight: 170,
+          relativeStrength: 0.39,
+          fatigue: 4,
+          recovery: 8
+        },
+        {
+          date: '2025-01-12T00:00:00.000Z',
+          exerciseName: 'machine_chest_press',
+          exerciseType: 'machine',
+          sets: 3,
+          weight: 210,
+          reps: 4,
+          estimated1RM: 238,
+          method: 'epley',
+          bodyweight: 185,
+          relativeStrength: 1.29,
+          fatigue: 3,
+          recovery: 9
+        },
+        {
+          date: '2025-01-13T00:00:00.000Z',
+          exerciseName: 'weighted_dips',
+          exerciseType: 'bodyweight',
+          sets: 3,
+          weight: 45,
+          reps: 8,
+          estimated1RM: 57,
+          method: 'epley',
+          bodyweight: 180,
+          relativeStrength: 0.32,
+          fatigue: 7,
+          recovery: 5
+        },
+        {
+          date: '2025-01-14T00:00:00.000Z',
+          exerciseName: 'dumbbell_bench',
+          exerciseType: 'dumbbell',
+          sets: 4,
+          weight: 90,
+          reps: 6,
+          estimated1RM: 108,
+          method: 'epley',
+          bodyweight: 175,
+          relativeStrength: 0.62,
+          fatigue: 5,
+          recovery: 7
         }
       ];
 
@@ -171,9 +258,10 @@ describe('Model Training and Prediction', () => {
 
       expect(model).toBeDefined();
       expect(model.coefficients).toBeDefined();
-      expect(model.sessionCount).toBe(8);
+      expect(model.sessionCount).toBe(14);
       expect(model.trainingDate).toBeDefined();
-      expect(model.features).toEqual(['intercept', 'weight', 'reps', 'sets', 'bodyweight', 'relativeStrength', 'fatigue', 'recovery']);
+      expect(model.features).toEqual(['intercept', 'weight', 'reps', 'sets', 'bodyweight', 'relativeStrength', 'fatigue', 'recovery',
+                                      'flatBench', 'incline', 'smithIncline', 'flye', 'machinePress', 'dips']);
 
       // Check that coefficients are numbers
       expect(typeof model.coefficients.b0).toBe('number');
@@ -184,6 +272,12 @@ describe('Model Training and Prediction', () => {
       expect(typeof model.coefficients.b5).toBe('number');
       expect(typeof model.coefficients.b6).toBe('number');
       expect(typeof model.coefficients.b7).toBe('number');
+      expect(typeof model.coefficients.b8).toBe('number');
+      expect(typeof model.coefficients.b9).toBe('number');
+      expect(typeof model.coefficients.b10).toBe('number');
+      expect(typeof model.coefficients.b11).toBe('number');
+      expect(typeof model.coefficients.b12).toBe('number');
+      expect(typeof model.coefficients.b13).toBe('number');
 
       // Check that coefficients are finite (not NaN or Infinity)
       expect(Number.isFinite(model.coefficients.b0)).toBe(true);
@@ -194,6 +288,12 @@ describe('Model Training and Prediction', () => {
       expect(Number.isFinite(model.coefficients.b5)).toBe(true);
       expect(Number.isFinite(model.coefficients.b6)).toBe(true);
       expect(Number.isFinite(model.coefficients.b7)).toBe(true);
+      expect(Number.isFinite(model.coefficients.b8)).toBe(true);
+      expect(Number.isFinite(model.coefficients.b9)).toBe(true);
+      expect(Number.isFinite(model.coefficients.b10)).toBe(true);
+      expect(Number.isFinite(model.coefficients.b11)).toBe(true);
+      expect(Number.isFinite(model.coefficients.b12)).toBe(true);
+      expect(Number.isFinite(model.coefficients.b13)).toBe(true);
     });
 
     it('should handle sessions with missing optional features', () => {
@@ -257,6 +357,7 @@ describe('Model Training and Prediction', () => {
           weight: 245,
           reps: 1,
           estimated1RM: 245,
+          true1RM: 245, // Chunk 4 Fix: true1RM when reps === 1
           method: 'epley',
           bodyweight: 170,
           relativeStrength: 1.44,
@@ -285,6 +386,7 @@ describe('Model Training and Prediction', () => {
           weight: 250,
           reps: 1,
           estimated1RM: 250,
+          true1RM: 250, // Chunk 4 Fix: true1RM when reps === 1
           method: 'epley',
           bodyweight: 195,
           relativeStrength: 1.28,
@@ -304,13 +406,88 @@ describe('Model Training and Prediction', () => {
           relativeStrength: 1.66,
           fatigue: 8,
           recovery: 4
+        },
+        // Add more sessions to meet minimum requirement (14 features = 14 sessions minimum)
+        {
+          date: '2025-01-09T00:00:00.000Z',
+          exerciseName: 'incline_bench',
+          exerciseType: 'barbell',
+          sets: 4,
+          weight: 200,
+          reps: 5,
+          estimated1RM: 233,
+          method: 'epley',
+          bodyweight: 180
+        },
+        {
+          date: '2025-01-10T00:00:00.000Z',
+          exerciseName: 'incline_smith',
+          exerciseType: 'machine',
+          sets: 3,
+          weight: 185,
+          reps: 6,
+          estimated1RM: 222,
+          method: 'epley'
+        },
+        {
+          date: '2025-01-11T00:00:00.000Z',
+          exerciseName: 'chest_fly',
+          exerciseType: 'cable',
+          sets: 4,
+          weight: 50,
+          reps: 10,
+          estimated1RM: 67,
+          method: 'epley',
+          bodyweight: 170
+        },
+        {
+          date: '2025-01-12T00:00:00.000Z',
+          exerciseName: 'machine_chest_press',
+          exerciseType: 'machine',
+          sets: 3,
+          weight: 210,
+          reps: 4,
+          estimated1RM: 238,
+          method: 'epley'
+        },
+        {
+          date: '2025-01-13T00:00:00.000Z',
+          exerciseName: 'weighted_dips',
+          exerciseType: 'bodyweight',
+          sets: 3,
+          weight: 45,
+          reps: 8,
+          estimated1RM: 57,
+          method: 'epley',
+          bodyweight: 180
+        },
+        {
+          date: '2025-01-14T00:00:00.000Z',
+          exerciseName: 'bench_press',
+          exerciseType: 'barbell',
+          sets: 3,
+          weight: 225,
+          reps: 5,
+          estimated1RM: 263,
+          method: 'epley'
+        },
+        {
+          date: '2025-01-15T00:00:00.000Z',
+          exerciseName: 'dumbbell_bench',
+          exerciseType: 'dumbbell',
+          sets: 4,
+          weight: 90,
+          reps: 6,
+          estimated1RM: 108,
+          method: 'epley',
+          bodyweight: 175
         }
       ];
 
       const model = trainModel(sessions);
 
       expect(model).toBeDefined();
-      expect(model.sessionCount).toBe(8);
+      expect(model.sessionCount).toBe(15);
       expect(Number.isFinite(model.coefficients.b0)).toBe(true);
       expect(Number.isFinite(model.coefficients.b1)).toBe(true);
       expect(Number.isFinite(model.coefficients.b2)).toBe(true);
@@ -319,6 +496,12 @@ describe('Model Training and Prediction', () => {
       expect(Number.isFinite(model.coefficients.b5)).toBe(true);
       expect(Number.isFinite(model.coefficients.b6)).toBe(true);
       expect(Number.isFinite(model.coefficients.b7)).toBe(true);
+      expect(Number.isFinite(model.coefficients.b8)).toBe(true);
+      expect(Number.isFinite(model.coefficients.b9)).toBe(true);
+      expect(Number.isFinite(model.coefficients.b10)).toBe(true);
+      expect(Number.isFinite(model.coefficients.b11)).toBe(true);
+      expect(Number.isFinite(model.coefficients.b12)).toBe(true);
+      expect(Number.isFinite(model.coefficients.b13)).toBe(true);
     });
   });
 
@@ -336,11 +519,18 @@ describe('Model Training and Prediction', () => {
           b4: 0.1, // bodyweight coefficient
           b5: 10,  // relativeStrength coefficient
           b6: -1,  // fatigue coefficient (negative because fatigue reduces performance)
-          b7: 1    // recovery coefficient (positive because recovery improves performance)
+          b7: 1,   // recovery coefficient (positive because recovery improves performance)
+          b8: 0,   // flatBench coefficient
+          b9: 0,   // incline coefficient
+          b10: 0,  // smithIncline coefficient
+          b11: 0,  // flye coefficient
+          b12: 0,  // machinePress coefficient
+          b13: 0   // dips coefficient
         },
         trainingDate: '2025-01-01T00:00:00.000Z',
         sessionCount: 10,
-        features: ['intercept', 'weight', 'reps', 'sets', 'bodyweight', 'relativeStrength', 'fatigue', 'recovery']
+        features: ['intercept', 'weight', 'reps', 'sets', 'bodyweight', 'relativeStrength', 'fatigue', 'recovery',
+                   'flatBench', 'incline', 'smithIncline', 'flye', 'machinePress', 'dips']
       };
     });
 
@@ -439,11 +629,18 @@ describe('Model Training and Prediction', () => {
           b4: 0.1,
           b5: 10,
           b6: -1,
-          b7: 1
+          b7: 1,
+          b8: 0,
+          b9: 0,
+          b10: 0,
+          b11: 0,
+          b12: 0,
+          b13: 0
         },
         trainingDate: '2025-01-01T00:00:00.000Z',
         sessionCount: 10,
-        features: ['intercept', 'weight', 'reps', 'sets', 'bodyweight', 'relativeStrength', 'fatigue', 'recovery']
+        features: ['intercept', 'weight', 'reps', 'sets', 'bodyweight', 'relativeStrength', 'fatigue', 'recovery',
+                  'flatBench', 'incline', 'smithIncline', 'flye', 'machinePress', 'dips']
       };
 
       // Ensure data directory exists

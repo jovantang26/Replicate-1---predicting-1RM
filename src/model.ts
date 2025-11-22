@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { Session } from './storage';
+import { Session, isChestExercise } from './storage';
 
 export interface ModelCoefficients {
   b0: number; // intercept
@@ -11,6 +11,12 @@ export interface ModelCoefficients {
   b5: number; // relativeStrength coefficient
   b6: number; // fatigue coefficient
   b7: number; // recovery coefficient
+  b8: number; // flatBench coefficient
+  b9: number; // incline coefficient
+  b10: number; // smithIncline coefficient
+  b11: number; // flye coefficient
+  b12: number; // machinePress coefficient
+  b13: number; // dips coefficient
 }
 
 export interface TrainedModel {
@@ -43,20 +49,70 @@ function ensureDataDir(): void {
 }
 
 /**
+ * Extracts chest exercise variation features from a session.
+ * Returns features for: flat bench, incline bench, smith incline, flyes, machine press, dips
+ */
+function extractChestVariationFeatures(session: Session): number[] {
+  const name = session.exerciseName.toLowerCase();
+  const type = session.exerciseType.toLowerCase();
+  
+  // Flat barbell bench (baseline)
+  const isFlatBench = (name.includes('bench_press') || name.includes('bench press') || 
+                       name.includes('flat_barbell_bench') || name.includes('flat barbell bench') ||
+                       (name.includes('bench') && type === 'barbell' && !name.includes('incline'))) ? 1 : 0;
+  
+  // Incline variations
+  const isIncline = (name.includes('incline_bench') || name.includes('incline bench') ||
+                     name.includes('incline_barbell_bench') || name.includes('incline barbell bench')) ? 1 : 0;
+  
+  // Smith incline
+  const isSmithIncline = (name.includes('incline_smith') || name.includes('incline smith') ||
+                          name.includes('smith_incline_bench') || name.includes('smith incline bench')) ? 1 : 0;
+  
+  // Flyes
+  const isFlye = (name.includes('chest_fly') || name.includes('chest fly') ||
+                  name.includes('cable_fly') || name.includes('cable fly') ||
+                  name.includes('machine_fly') || name.includes('machine fly') ||
+                  name.includes('flye') || name.includes('fly')) ? 1 : 0;
+  
+  // Machine chest press
+  const isMachinePress = (name.includes('machine_chest_press') || name.includes('machine chest press') ||
+                          (name.includes('chest_press') && type === 'machine') ||
+                          (name.includes('chest press') && type === 'machine')) ? 1 : 0;
+  
+  // Weighted dips
+  const isDips = (name.includes('weighted_dips') || name.includes('weighted dips') ||
+                  (name.includes('dips') && session.weight > 0)) ? 1 : 0;
+  
+  return [isFlatBench, isIncline, isSmithIncline, isFlye, isMachinePress, isDips];
+}
+
+/**
  * Prepares feature matrix and target vector from sessions for training.
- * Uses estimated1RM as the target variable (what we want to predict).
+ * Chunk 7 Fix: Uses true1RM when available, falls back to estimated1RM.
+ * Only includes chest exercises and adds chest variation features.
  */
 function prepareTrainingData(sessions: Session[]): { X: number[][], y: number[] } {
   const X: number[][] = [];
   const y: number[] = [];
 
-  for (const session of sessions) {
+  // Chunk 7 Fix: Filter for chest-only exercises
+  const chestSessions = sessions.filter(isChestExercise);
+
+  for (const session of chestSessions) {
     // Skip sessions with missing required features
     if (!session.weight || !session.reps || !session.sets) {
       continue;
     }
 
-    // Feature vector: [1, weight, reps, sets, bodyweight, relativeStrength, fatigue, recovery]
+    // Chunk 7 Fix: Use true1RM when available, fallback to estimated1RM
+    const target = session.true1RM ?? session.estimated1RM;
+    
+    // Extract chest variation features
+    const chestVariations = extractChestVariationFeatures(session);
+    
+    // Feature vector: [1, weight, reps, sets, bodyweight, relativeStrength, fatigue, recovery, 
+    //                  flatBench, incline, smithIncline, flye, machinePress, dips]
     const features = [
       1, // intercept term
       session.weight,
@@ -65,11 +121,12 @@ function prepareTrainingData(sessions: Session[]): { X: number[][], y: number[] 
       session.bodyweight || 0, // use 0 if null/undefined
       session.relativeStrength || 0, // use 0 if null/undefined
       session.fatigue || 0, // use 0 if null/undefined
-      session.recovery || 0 // use 0 if null/undefined
+      session.recovery || 0, // use 0 if null/undefined
+      ...chestVariations // Add chest variation features
     ];
 
     X.push(features);
-    y.push(session.estimated1RM); // target is the estimated 1RM
+    y.push(target); // Chunk 7 Fix: Use true1RM when available
   }
 
   return { X, y };
@@ -127,7 +184,13 @@ function performLinearRegression(X: number[][], y: number[]): ModelCoefficients 
     b4: coeffs[4], // bodyweight
     b5: coeffs[5], // relativeStrength
     b6: coeffs[6], // fatigue
-    b7: coeffs[7]  // recovery
+    b7: coeffs[7], // recovery
+    b8: coeffs[8], // flatBench
+    b9: coeffs[9], // incline
+    b10: coeffs[10], // smithIncline
+    b11: coeffs[11], // flye
+    b12: coeffs[12], // machinePress
+    b13: coeffs[13]  // dips
   };
 }
 
@@ -204,7 +267,8 @@ export function trainModel(sessions: Session[]): TrainedModel {
     coefficients,
     trainingDate: new Date().toISOString(),
     sessionCount: X.length,
-    features: ['intercept', 'weight', 'reps', 'sets', 'bodyweight', 'relativeStrength', 'fatigue', 'recovery']
+    features: ['intercept', 'weight', 'reps', 'sets', 'bodyweight', 'relativeStrength', 'fatigue', 'recovery',
+               'flatBench', 'incline', 'smithIncline', 'flye', 'machinePress', 'dips']
   };
 
   return model;
@@ -212,6 +276,7 @@ export function trainModel(sessions: Session[]): TrainedModel {
 
 /**
  * Makes a prediction using the trained model and input features.
+ * Chunk 7 Fix: Includes chest variation features in prediction.
  */
 export function predict(model: TrainedModel, input: PredictionInput): number {
   const { coefficients } = model;
@@ -228,8 +293,14 @@ export function predict(model: TrainedModel, input: PredictionInput): number {
     }
   }
 
-  // Apply the linear model
-  const prediction = 
+  // Extract chest variation features (default to flat bench if not specified)
+  // Note: In practice, you'd pass exercise name/type, but for backward compatibility
+  // we default to flat bench (all features 0 except flatBench = 1)
+  const chestVariations = [1, 0, 0, 0, 0, 0]; // [flatBench, incline, smithIncline, flye, machinePress, dips]
+
+  // Apply the linear model with chest variation features
+  // Backward compatibility: check if new coefficients exist (old models won't have them)
+  let prediction = 
     coefficients.b0 + // intercept
     coefficients.b1 * input.weight +
     coefficients.b2 * input.reps +
@@ -238,6 +309,17 @@ export function predict(model: TrainedModel, input: PredictionInput): number {
     coefficients.b5 * (relativeStrength || 0) +
     coefficients.b6 * (input.fatigue || 0) +
     coefficients.b7 * (input.recovery || 0);
+  
+  // Add chest variation features if available (new models)
+  if ('b8' in coefficients) {
+    prediction += 
+      (coefficients.b8 || 0) * chestVariations[0] + // flatBench
+      (coefficients.b9 || 0) * chestVariations[1] + // incline
+      (coefficients.b10 || 0) * chestVariations[2] + // smithIncline
+      (coefficients.b11 || 0) * chestVariations[3] + // flye
+      (coefficients.b12 || 0) * chestVariations[4] + // machinePress
+      (coefficients.b13 || 0) * chestVariations[5]; // dips
+  }
 
   return Math.round(prediction);
 }

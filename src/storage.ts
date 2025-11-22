@@ -10,6 +10,7 @@ export interface Session {
   reps: number;
   estimated1RM: number;
   method: string; // "epley"
+  true1RM?: number | null; // True 1RM when reps === 1, null otherwise
   bodyweight?: number | null;
   relativeStrength?: number | null;
   strengthCategory?: string | undefined; // e.g., novice/intermediate/advanced/elite
@@ -93,5 +94,59 @@ function ensureDataDir(): void {
   if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
   }
+}
+
+/**
+ * Checks if a session represents a chest exercise.
+ * Supports all chest exercise variations: bench press, incline, smith, dumbbell, flyes, machine press, dips.
+ */
+export function isChestExercise(session: Session): boolean {
+  const name = session.exerciseName.toLowerCase();
+  const type = session.exerciseType.toLowerCase();
+  
+  // Flat barbell bench variations
+  if (name.includes('bench_press') || name.includes('bench press') || 
+      name.includes('flat_barbell_bench') || name.includes('flat barbell bench') ||
+      (name.includes('bench') && type === 'barbell' && !name.includes('incline'))) {
+    return true;
+  }
+  
+  // Incline variations
+  if (name.includes('incline_bench') || name.includes('incline bench') ||
+      name.includes('incline_barbell_bench') || name.includes('incline barbell bench') ||
+      name.includes('incline_smith') || name.includes('incline smith') ||
+      name.includes('smith_incline_bench') || name.includes('smith incline bench')) {
+    return true;
+  }
+  
+  // Dumbbell bench variations
+  if (name.includes('dumbbell_bench') || name.includes('dumbbell bench') ||
+      name.includes('incline_dumbbell_bench') || name.includes('incline dumbbell bench') ||
+      (name.includes('bench') && type === 'dumbbell')) {
+    return true;
+  }
+  
+  // Flye variations
+  if (name.includes('chest_fly') || name.includes('chest fly') ||
+      name.includes('cable_fly') || name.includes('cable fly') ||
+      name.includes('machine_fly') || name.includes('machine fly') ||
+      name.includes('flye') || name.includes('fly')) {
+    return true;
+  }
+  
+  // Machine chest press
+  if (name.includes('machine_chest_press') || name.includes('machine chest press') ||
+      (name.includes('chest_press') && type === 'machine') ||
+      (name.includes('chest press') && type === 'machine')) {
+    return true;
+  }
+  
+  // Weighted dips
+  if (name.includes('weighted_dips') || name.includes('weighted dips') ||
+      (name.includes('dips') && session.weight > 0)) {
+    return true;
+  }
+  
+  return false;
 }
 

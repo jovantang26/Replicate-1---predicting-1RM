@@ -1,4 +1,4 @@
-import { Session } from './storage';
+import { Session, isChestExercise } from './storage';
 import { estimate1RM } from './calc';
 
 export interface WeeklySummary {
@@ -85,33 +85,21 @@ function formatDateRange(start: Date, end: Date): string {
 }
 
 /**
- * Checks if a session is a barbell bench press session
- */
-function isBenchPress(session: Session): boolean {
-  if (session.exerciseType !== 'barbell') {
-    return false;
-  }
-  
-  const name = session.exerciseName.toLowerCase();
-  return name.includes('bench') || name.includes('bench_press') || name.includes('barbell_bench');
-}
-
-/**
  * Gets weekly summaries from sessions, grouped by ISO week
- * Only includes barbell bench press sessions
+ * Only includes chest exercise sessions (all variations: bench, incline, smith, flyes, machine, dips)
  */
 export function getWeeklySummaries(sessions: Session[]): WeeklySummary[] {
-  // Filter for barbell bench press sessions
-  const benchSessions = sessions.filter(isBenchPress);
+  // Chunk 6 Fix: Filter for ALL chest exercises, not just flat barbell bench
+  const chestSessions = sessions.filter(isChestExercise);
   
-  if (benchSessions.length === 0) {
+  if (chestSessions.length === 0) {
     return [];
   }
   
   // Group by ISO week
   const weekMap = new Map<number, Session[]>();
   
-  for (const session of benchSessions) {
+  for (const session of chestSessions) {
     const date = new Date(session.date);
     const week = getISOWeek(date);
     
